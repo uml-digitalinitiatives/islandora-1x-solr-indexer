@@ -14,3 +14,6 @@ Uses several overridable java options.
 * fedora3.indexer.xslt - The location of the XSLT to apply (default: classpath://test.xslt)
 
 You will almost certainly need to override the ```fedora3.indexer.xslt``` option. You can specify a file path with ```-Dfedora3.indexer.xslt=file:///full/path/to/xslt```
+
+## Credit
+All credit to [acoburn](https://github.com/acoburn) for this is just an implementation of his camel route wrapped in a war deployment.
