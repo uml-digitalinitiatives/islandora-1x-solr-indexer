@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:camel="http://camel.apache.org/schema/spring"
+    xsi:schemaLocation="
+    	http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd">
+ 
+ 	<bean id="bridgePropertyPlaceholder" class="org.apache.camel.spring.spi.BridgePropertyPlaceholderConfigurer">
+    	<property name="location" value="classpath:application.properties"/>
+  	</bean>
+ 
+    <bean id="activemq"
+      class="org.apache.activemq.camel.component.ActiveMQComponent">
+      <property name="requestTimeout" value="2" />
+      <property name="testConnectionOnStartup" value="true" />
+      <property name="brokerURL" value="${activemq.brokerUrl}"/>
+   </bean>
+
+	<bean id="myLogger" class="org.apache.log4j.Logger" factory-method="getLogger">
+    	<constructor-arg value="ca.umanitoba.fc3indexer"/>
+	</bean>
+ 
+  	<camelContext xmlns="http://camel.apache.org/schema/spring"
+  		xmlns:foxml="info:fedora/fedora-system:def/foxml#">
+ 
+ 		<route id="fedora-aggregator">
+    		<description>Fedora Message aggregator (10 sec inactivity timeout)</description>
+    		<from uri="activemq:{{activemq.queuename}}"/>
+    		<log message="Fedora Object: ${header.pid}, method: ${header.methodName}"/>
+    		<!-- <aggregate strategyRef="aggregatorStrategy" completionTimeout="10000">
+      			<correlationExpression>
+        			<simple>${header.pid}</simple>
+      			</correlationExpression>
+      			<to uri="seda:aggregated"/>
+    		</aggregate>-->
+    		<to uri="seda:aggregated"/>
+  		</route>
+ 
+  		<route id="fedora-routing">
+    		<description>Fedora message routing</description>
+    		<from uri="seda:aggregated"/>
+    		<choice>
+      			<when>
+        			<simple>${header.methodName} == 'purgeObject'</simple>
+        			<to uri="seda:fedora.delete"/>
+      			</when>
+      			<otherwise>
+        			<setHeader headerName="Exchange.HTTP_METHOD">
+          				<constant>GET</constant>
+        			</setHeader>
+        			<setHeader headerName="Exchange.HTTP_PATH">
+          				<simple>/fedora/objects/${header.pid}/objectXML</simple>
+        			</setHeader>
+        			<log message="Getting foxml ${header.pid}"/>
+        			<to uri="http4://{{fcrepo.baseUrl}}/?authUsername={{fcrepo.authUser}}&amp;authPassword={{fcrepo.authPassword}}"/>
+        			<convertBodyTo type="org.w3c.dom.Document"/>
+        			<filter>
+          				<xpath>/foxml:digitalObject/foxml:datastream[@ID='MODS']</xpath>
+          				<to uri="seda:fedora.insert"/>
+        			</filter>
+      			</otherwise>
+    		</choice>
+  		</route>
+ 
+  		<route id="fedora-insert-multicaster">
+    		<description>Fedora Message insert multicaster</description>
+    		<from uri="seda:fedora.insert"/>
+    		<choice>
+      			<when>
+        			<xpath>/foxml:digitalObject/foxml:objectProperties/foxml:property[@NAME = 'info:fedora/fedora-system:def/model#state' and @VALUE = 'Active']</xpath>
+        			<!-- <multicast>
+          				<to uri="vm:solr.update"/>
+          				<to uri="vm:jena.update"/>
+          				<to uri="vm:oai.update"/>
+        			</multicast> -->
+        			<to uri="seda:solr.update"/>
+      			</when>
+      			<otherwise>
+        			<to uri="seda:fedora.delete"/>
+      			</otherwise>
+    		</choice>
+  		</route>
+ 
+  		<route id="fedora-delete-multiplexer">
+    		<description>Fedora Message delete multiplexer</description>
+    		<from uri="seda:fedora.delete"/>
+    		<!-- <multicast>
+      			<to uri="vm:solr.delete"/>
+      			<to uri="vm:jena.delete"/>
+      			<to uri="vm:oai.delete"/>
+    		</multicast> -->
+    		<to uri="seda:solr.delete"/>
+  		</route>
+ 
+ 		<route id="solr-deletion">
+    		<description>Solr Deletion</description>
+    		<from uri="seda:solr.delete"/>
+    		<setHeader headerName="SolrOperation">
+      			<constant>DELETE_BY_ID</constant>
+    		</setHeader>
+    		<setBody>
+      			<simple>${header.pid}</simple>
+    		</setBody>
+    		<to uri="solr://{{solr.baseUrl}}"/>
+    		<log message="removed ${header.pid} from Solr"/>
+  		</route>
+ 
+  		<route id="solr-insertion">
+    		<description>Solr Insertion</description>
+    		<from uri="seda:solr.update"/>
+    		<setHeader headerName="repositoryName">
+    			<constant>fedora</constant>
+    		</setHeader>
+    		<setHeader headerName="FEDORAUSER">
+    			<simple>{{fcrepo.authUser}}</simple>
+    		</setHeader>
+    		<setHeader headerName="FEDORAPASS">
+    			<simple>{{fcrepo.authPassword}}</simple>
+    		</setHeader>
+    		<to uri="xslt:{{foxmlXslt.path}}?transformerFactoryClass=org.apache.xalan.processor.TransformerFactoryImpl"/>
+    		<setHeader headerName="SolrOperation">
+      			<constant>INSERT</constant>
+    		</setHeader>
+    		<to uri="solr://{{solr.baseUrl}}"/>
+    		<log message="Added ${header.pid} to Solr"/>
+  		</route>
+  </camelContext>
+ 
+</beans>

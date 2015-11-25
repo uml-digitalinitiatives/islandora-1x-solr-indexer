@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>ca.umanitoba.fc3indexer</groupId>
+  <artifactId>fedora3-solr-indexer</artifactId>
+  <version>0.0.1-SNAPSHOT</version>
+  <packaging>war</packaging>
+
+  <properties>
+    <activemq.version>5.11.1</activemq.version>
+    <camel.version>2.15.1</camel.version>
+    <spring.version>4.1.5.RELEASE</spring.version>
+    <compiler.plugin.version>3.2</compiler.plugin.version>
+    <slf4j.version>1.7.7</slf4j.version>
+    <log4j.version>1.2.17</log4j.version>
+    <joda.version>2.6</joda.version>
+    <javax.version>3.1.0</javax.version>
+    <apache.commons.version>1.10</apache.commons.version>
+    <xalan.version>2.7.0</xalan.version>
+  </properties>
+  
+  <dependencies>
+    <dependency>
+      <groupId>org.apache.camel</groupId>
+      <artifactId>camel-core</artifactId>
+      <version>${camel.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.camel</groupId>
+      <artifactId>camel-spring</artifactId>
+      <version>${camel.version}</version>
+    </dependency>
+    
+    <dependency>
+      <groupId>org.apache.camel</groupId>
+      <artifactId>camel-jms</artifactId>
+      <version>${camel.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.camel</groupId>
+      <artifactId>camel-solr</artifactId>
+      <version>${camel.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.camel</groupId>
+      <artifactId>camel-http4</artifactId>
+      <version>${camel.version}</version>
+    </dependency>
+    
+    <!-- ActiveMQ -->
+    <dependency>
+      <groupId>org.apache.activemq</groupId>
+      <artifactId>activemq-camel</artifactId>
+      <version>${activemq.version}</version>
+    </dependency>
+
+    <dependency>
+	    <groupId>joda-time</groupId>
+	    <artifactId>joda-time</artifactId>
+	    <version>${joda.version}</version>
+    </dependency>
+    <!-- <dependency>
+      <groupId>org.apache.activemq</groupId>
+      <artifactId>apache-activemq</artifactId>
+      <version>${activemq.version}</version>
+    </dependency>   --> 
+    
+    <dependency>
+		<groupId>xalan</groupId>
+		<artifactId>xalan</artifactId>
+		<version>${xalan.version}</version>
+	</dependency>
+    
+	<!-- Spring -->
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-web</artifactId>
+       <version>${spring.version}</version>
+    </dependency>
+    
+        <!-- logging -->
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <version>${slf4j.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-log4j12</artifactId>
+      <version>${slf4j.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>log4j</groupId>
+      <artifactId>log4j</artifactId>
+      <version>${log4j.version}</version>
+    </dependency>
+    
+    
+        <!-- testing -->
+    <dependency>
+      <groupId>org.apache.camel</groupId>
+      <artifactId>camel-test-spring</artifactId>
+      <version>${camel.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+<!--     <dependency>
+    	<groupId>commons-codec</groupId>
+    	<artifactId>commons-codec</artifactId>
+    	<version>${apache.commons.version}</version>
+    </dependency>-->
+  </dependencies>
+  
+  <build>
+    <defaultGoal>install</defaultGoal>
+    
+    <finalName>${project.artifactId}</finalName>
+    
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+        <filtering>true</filtering>
+      </resource>
+    </resources>
+    
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-war-plugin</artifactId>
+        <version>2.6</version>
+     </plugin>
+     <plugin>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>${compiler.plugin.version}</version>
+          <configuration>
+            <source>1.7</source>
+            <target>1.7</target>
+          </configuration>
+        </plugin>
+
+        <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-resources-plugin</artifactId>
+        <version>2.6</version>
+        <configuration>
+          <encoding>UTF-8</encoding>
+        </configuration>
+      </plugin>
+
+      <!-- plugin so you can run mvn jetty:run -->
+      <plugin>
+        <groupId>org.mortbay.jetty</groupId>
+        <artifactId>jetty-maven-plugin</artifactId>
+        <version>8.1.15.v20140411</version>
+        <configuration>
+          <webAppConfig>
+            <contextPath>/</contextPath>
+          </webAppConfig>
+          <systemProperties>
+            <!-- enable easy JMX connection to JConsole -->
+            <systemProperty>
+              <name>com.sun.management.jmxremote</name>
+              <value/>
+            </systemProperty>
+          </systemProperties>
+          <scanIntervalSeconds>10</scanIntervalSeconds>
+        </configuration>
+      </plugin>
+      
+    </plugins>
+  </build>
+  
+</project>
