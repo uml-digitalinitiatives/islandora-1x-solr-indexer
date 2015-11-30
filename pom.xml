@@ -60,11 +60,6 @@
 	    <artifactId>joda-time</artifactId>
 	    <version>${joda.version}</version>
     </dependency>
-    <!-- <dependency>
-      <groupId>org.apache.activemq</groupId>
-      <artifactId>apache-activemq</artifactId>
-      <version>${activemq.version}</version>
-    </dependency>   --> 
     
     <dependency>
 		<groupId>xalan</groupId>

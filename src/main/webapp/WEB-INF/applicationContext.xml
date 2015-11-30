@@ -20,6 +20,8 @@
 	<bean id="myLogger" class="org.apache.log4j.Logger" factory-method="getLogger">
     	<constructor-arg value="ca.umanitoba.fc3indexer"/>
 	</bean>
+	
+	<bean id="latestAggregation" class="org.apache.camel.processor.aggregate.UseLatestAggregationStrategy"/>
  
   	<camelContext xmlns="http://camel.apache.org/schema/spring"
   		xmlns:foxml="info:fedora/fedora-system:def/foxml#">
@@ -27,14 +29,15 @@
  		<route id="fedora-aggregator">
     		<description>Fedora Message aggregator (10 sec inactivity timeout)</description>
     		<from uri="activemq:{{activemq.queuename}}"/>
-    		<log message="Fedora Object: ${header.pid}, method: ${header.methodName}"/>
-    		<!-- <aggregate strategyRef="aggregatorStrategy" completionTimeout="10000">
+    		<log message="Fedora Object: ${header.pid}, method: ${header.methodName}" loggingLevel="DEBUG"/>
+    		<!--  aggregration strategy -->
+    		<aggregate strategyRef="latestAggregation" completionTimeout="10000">
       			<correlationExpression>
         			<simple>${header.pid}</simple>
       			</correlationExpression>
       			<to uri="seda:aggregated"/>
-    		</aggregate>-->
-    		<to uri="seda:aggregated"/>
+    		</aggregate>
+    		<!-- <to uri="seda:aggregated"/>-->
   		</route>
  
   		<route id="fedora-routing">
@@ -50,15 +53,15 @@
           				<constant>GET</constant>
         			</setHeader>
         			<setHeader headerName="Exchange.HTTP_PATH">
-          				<simple>/fedora/objects/${header.pid}/objectXML</simple>
+          				<simple>{{fcrepo.basePath}}/objects/$simple{header.pid}/objectXML</simple>
         			</setHeader>
-        			<log message="Getting foxml ${header.pid}"/>
+        			<log message="Getting foxml ${header.pid}" loggingLevel="DEBUG"/>
         			<to uri="http4://{{fcrepo.baseUrl}}/?authUsername={{fcrepo.authUser}}&amp;authPassword={{fcrepo.authPassword}}"/>
         			<convertBodyTo type="org.w3c.dom.Document"/>
-        			<filter>
-          				<xpath>/foxml:digitalObject/foxml:datastream[@ID='MODS']</xpath>
+<!--         			<filter>
+          				<xpath>/foxml:digitalObject/foxml:datastream[@ID='MODS']</xpath> -->
           				<to uri="seda:fedora.insert"/>
-        			</filter>
+        			<!-- </filter>-->
       			</otherwise>
     		</choice>
   		</route>
@@ -103,7 +106,7 @@
       			<simple>${header.pid}</simple>
     		</setBody>
     		<to uri="solr://{{solr.baseUrl}}"/>
-    		<log message="removed ${header.pid} from Solr"/>
+    		<log message="removed ${header.pid} from Solr" loggingLevel="INFO"/>
   		</route>
  
   		<route id="solr-insertion">
@@ -123,7 +126,7 @@
       			<constant>INSERT</constant>
     		</setHeader>
     		<to uri="solr://{{solr.baseUrl}}"/>
-    		<log message="Added ${header.pid} to Solr"/>
+    		<log message="Added ${header.pid} to Solr" loggingLevel="INFO"/>
   		</route>
   </camelContext>
  
