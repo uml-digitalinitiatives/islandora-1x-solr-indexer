@@ -17,19 +17,19 @@
       <property name="brokerURL" value="${activemq.brokerUrl}"/>
    </bean>
 
-	<bean id="myLogger" class="org.apache.log4j.Logger" factory-method="getLogger">
+	<bean id="myLogger" class="org.slf4j.LoggerFactory" factory-method="getLogger">
     	<constructor-arg value="ca.umanitoba.fc3indexer"/>
 	</bean>
 	
 	<bean id="latestAggregation" class="org.apache.camel.processor.aggregate.UseLatestAggregationStrategy"/>
  
-  	<camelContext xmlns="http://camel.apache.org/schema/spring"
+  	<camelContext id="fedora3-solr-indexer" xmlns="http://camel.apache.org/schema/spring"
   		xmlns:foxml="info:fedora/fedora-system:def/foxml#">
  
  		<route id="fedora-aggregator">
     		<description>Fedora Message aggregator (10 sec inactivity timeout)</description>
     		<from uri="activemq:{{activemq.queuename}}"/>
-    		<log message="Fedora Object: ${header.pid}, method: ${header.methodName}" loggingLevel="DEBUG"/>
+    		<log message="Fedora Object: ${header.pid}, method: ${header.methodName}" loggingLevel="INFO" loggerRef="myLogger"/>
     		<!--  aggregration strategy -->
     		<aggregate strategyRef="latestAggregation" completionTimeout="10000">
       			<correlationExpression>
@@ -37,7 +37,6 @@
       			</correlationExpression>
       			<to uri="seda:aggregated"/>
     		</aggregate>
-    		<!-- <to uri="seda:aggregated"/>-->
   		</route>
  
   		<route id="fedora-routing">
@@ -55,13 +54,10 @@
         			<setHeader headerName="Exchange.HTTP_PATH">
           				<simple>{{fcrepo.basePath}}/objects/$simple{header.pid}/objectXML</simple>
         			</setHeader>
-        			<log message="Getting foxml ${header.pid}" loggingLevel="DEBUG"/>
+        			<log message="Getting foxml ${header.pid}" loggingLevel="DEBUG" loggerRef="myLogger"/>
         			<to uri="http4://{{fcrepo.baseUrl}}/?authUsername={{fcrepo.authUser}}&amp;authPassword={{fcrepo.authPassword}}"/>
         			<convertBodyTo type="org.w3c.dom.Document"/>
-<!--         			<filter>
-          				<xpath>/foxml:digitalObject/foxml:datastream[@ID='MODS']</xpath> -->
-          				<to uri="seda:fedora.insert"/>
-        			<!-- </filter>-->
+          			<to uri="seda:fedora.insert"/>
       			</otherwise>
     		</choice>
   		</route>
@@ -72,28 +68,12 @@
     		<choice>
       			<when>
         			<xpath>/foxml:digitalObject/foxml:objectProperties/foxml:property[@NAME = 'info:fedora/fedora-system:def/model#state' and @VALUE = 'Active']</xpath>
-        			<!-- <multicast>
-          				<to uri="vm:solr.update"/>
-          				<to uri="vm:jena.update"/>
-          				<to uri="vm:oai.update"/>
-        			</multicast> -->
         			<to uri="seda:solr.update"/>
       			</when>
       			<otherwise>
-        			<to uri="seda:fedora.delete"/>
+        			<to uri="seda:solr.delete"/>
       			</otherwise>
     		</choice>
-  		</route>
- 
-  		<route id="fedora-delete-multiplexer">
-    		<description>Fedora Message delete multiplexer</description>
-    		<from uri="seda:fedora.delete"/>
-    		<!-- <multicast>
-      			<to uri="vm:solr.delete"/>
-      			<to uri="vm:jena.delete"/>
-      			<to uri="vm:oai.delete"/>
-    		</multicast> -->
-    		<to uri="seda:solr.delete"/>
   		</route>
  
  		<route id="solr-deletion">
@@ -106,13 +86,14 @@
       			<simple>${header.pid}</simple>
     		</setBody>
     		<to uri="solr://{{solr.baseUrl}}"/>
-    		<log message="removed ${header.pid} from Solr" loggingLevel="INFO"/>
+    		<log message="Removed ${header.pid} from Solr" loggingLevel="INFO" loggerRef="myLogger"/>
   		</route>
  
   		<route id="solr-insertion">
     		<description>Solr Insertion</description>
-    		<from uri="seda:solr.update"/>
-    		<setHeader headerName="repositoryName">
+    		<from uri="seda:solr.update?blockWhenFull=true&amp;concurrentConsumers=5"/>
+    		
+    		<setHeader headerName="REPOSITORYNAME">
     			<constant>fedora</constant>
     		</setHeader>
     		<setHeader headerName="FEDORAUSER">
@@ -121,12 +102,15 @@
     		<setHeader headerName="FEDORAPASS">
     			<simple>{{fcrepo.authPassword}}</simple>
     		</setHeader>
+    		<setHeader headerName="FEDORASOAP">
+    			<simple>http://{{fcrepo.baseUrl}}{{fcrepo.basePath}}/services</simple>
+    		</setHeader>
     		<to uri="xslt:{{foxmlXslt.path}}?transformerFactoryClass=org.apache.xalan.processor.TransformerFactoryImpl"/>
     		<setHeader headerName="SolrOperation">
       			<constant>INSERT</constant>
     		</setHeader>
     		<to uri="solr://{{solr.baseUrl}}"/>
-    		<log message="Added ${header.pid} to Solr" loggingLevel="INFO"/>
+    		<log message="Added ${header.pid} to Solr" loggingLevel="INFO" loggerRef="myLogger"/>
   		</route>
   </camelContext>
  

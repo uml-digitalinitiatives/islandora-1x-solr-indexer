@@ -12,12 +12,42 @@
     <spring.version>4.1.5.RELEASE</spring.version>
     <compiler.plugin.version>3.2</compiler.plugin.version>
     <slf4j.version>1.7.7</slf4j.version>
-    <log4j.version>1.2.17</log4j.version>
+    <logback.version>1.1.1</logback.version>
     <joda.version>2.6</joda.version>
     <javax.version>3.1.0</javax.version>
     <apache.commons.version>1.10</apache.commons.version>
+    <apache.httpclient.version>4.5.1</apache.httpclient.version>
     <xalan.version>2.7.0</xalan.version>
+    <!-- Fcrepo Version -->
+    <fcrepo.version>3.8.1</fcrepo.version>
+    <!--  Fedora GSearch  -->
+    <discovery.version>0.2</discovery.version>
+    <httpclient.version>3.1</httpclient.version>
+    <commons-logging.version>1.1.3</commons-logging.version>
+    <axis.version>1.4</axis.version>
+    <jaxrpc-api.version>1.1</jaxrpc-api.version>
+    <trippi-core.version>1.5.6</trippi-core.version>
   </properties>
+  
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.springframework</groupId>
+        <artifactId>spring-web</artifactId>
+        <version>${spring.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.springframework</groupId>
+        <artifactId>spring-context</artifactId>
+        <version>${spring.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.springframework</groupId>
+        <artifactId>spring-core</artifactId>
+        <version>${spring.version}</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
   
   <dependencies>
     <dependency>
@@ -48,6 +78,13 @@
       <version>${camel.version}</version>
     </dependency>
     
+    <dependency>
+	  <groupId>org.apache.httpcomponents</groupId>
+	  <artifactId>httpclient</artifactId>
+	  <version>${apache.httpclient.version}</version>
+	</dependency>
+    
+    
     <!-- ActiveMQ -->
     <dependency>
       <groupId>org.apache.activemq</groupId>
@@ -73,23 +110,90 @@
       <artifactId>spring-web</artifactId>
        <version>${spring.version}</version>
     </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-context</artifactId>
+      <version>${spring.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-core</artifactId>
+      <version>${spring.version}</version>
+    </dependency>
     
         <!-- logging -->
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
-      <version>${slf4j.version}</version>
+	<dependency>
+	  <groupId>ch.qos.logback</groupId>
+	  <artifactId>logback-classic</artifactId>
+	  <version>${logback.version}</version>
+	</dependency>
+    
+    
+    <!--  FedoraGSearch dependencies -->
+   <dependency>
+	  <groupId>commons-discovery</groupId>
+	  <artifactId>commons-discovery</artifactId>
+	  <version>${discovery.version}</version>
+	  <type>jar</type>
+	</dependency>
+	<dependency>
+	  <groupId>commons-httpclient</groupId>
+	  <artifactId>commons-httpclient</artifactId>
+	  <version>${httpclient.version}</version>
+	  <type>jar</type>
+	</dependency>
+	<dependency>
+	  <groupId>commons-logging</groupId>
+	  <artifactId>commons-logging</artifactId>
+	  <version>${commons-logging.version}</version>
+	  <type>jar</type>
+	</dependency>
+	<dependency>
+	  <groupId>axis</groupId>
+	  <artifactId>axis</artifactId>
+	  <version>${axis.version}</version>
+	  <type>jar</type>
+	</dependency>
+	<dependency>
+	  <groupId>javax.xml</groupId>
+	  <artifactId>jaxrpc-api</artifactId>
+	  <version>${jaxrpc-api.version}</version>
+	  <type>jar</type>
     </dependency>
     <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-log4j12</artifactId>
-      <version>${slf4j.version}</version>
+	  <groupId>org.trippi</groupId>
+	  <artifactId>trippi-core</artifactId>
+	  <version>${trippi-core.version}</version>
+	  <type>jar</type>
     </dependency>
     <dependency>
-      <groupId>log4j</groupId>
-      <artifactId>log4j</artifactId>
-      <version>${log4j.version}</version>
-    </dependency>
+	  <groupId>org.fcrepo</groupId>
+	  <artifactId>fcrepo-common</artifactId>
+	  <version>${fcrepo.version}</version>
+	  <type>jar</type>
+	</dependency>
+    <dependency>
+	  <groupId>org.fcrepo</groupId>
+	  <artifactId>fcrepo-server</artifactId>
+	  <version>${fcrepo.version}</version>
+	  <type>jar</type>
+	</dependency>
+	<dependency>
+	  <groupId>org.fcrepo</groupId>
+	  <artifactId>fcrepo-client-admin</artifactId>
+	  <version>${fcrepo.version}</version>
+	  <type>jar</type>
+	  <exclusions>
+	    <exclusion>
+	      <groupId>org.springframework</groupId>
+	      <artifactId>spring-asm</artifactId>
+	    </exclusion>
+	  </exclusions>
+	</dependency>
+	
+	
+	
+    
     
     
         <!-- testing -->
@@ -106,6 +210,8 @@
     	<version>${apache.commons.version}</version>
     </dependency>-->
   </dependencies>
+  
+
   
   <build>
     <defaultGoal>install</defaultGoal>
