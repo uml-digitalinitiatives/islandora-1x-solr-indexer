@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration scan="true" scanPeriod="60 seconds">
+  <property name="INDEXER_LOG_PATH"
+            value="/var/log/tomcat/fedora3-camel-indexer${logfile.extension:-.log}"/>
+
+  <appender name="INDEXER" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>${INDEXER_LOG_PATH}</file>
+    <encoder>
+      <pattern>%p %d{yyyy-MM-dd' 'HH:mm:ss.SSS} [%t] \(%c{0}\) %m%n</pattern>
+    </encoder>
+    <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+      <maxIndex>5</maxIndex>
+      <FileNamePattern>${INDEXER_LOG_PATH}.%i</FileNamePattern>
+    </rollingPolicy>
+    <triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+      <MaxFileSize>20MB</MaxFileSize>
+    </triggeringPolicy>
+  </appender>
+  
+   <logger name="ca.umanitoba.fc3indexer" additivity="false" level="debug">
+    <appender-ref ref="INDEXER"/>
+  </logger>
+  <logger name="dk.defxws.fedoragsearch.server" additivity="false" level="debug">
+    <appender-ref ref="INDEXER"/>
+  </logger>
+  <logger name="org.fcrepo.client" additivity="false" level="debug">
+    <appender-ref ref="INDEXER"/>
+  </logger>
+  
+
+</configuration>
