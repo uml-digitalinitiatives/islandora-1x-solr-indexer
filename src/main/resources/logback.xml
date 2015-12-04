@@ -3,6 +3,18 @@
   <property name="INDEXER_LOG_PATH"
             value="/var/log/tomcat/fedora3-camel-indexer${logfile.extension:-.log}"/>
 
+  <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>%p %d{yyyy-MM-dd' 'HH:mm:ss.SSS} [%t] \(%c{0}\) %m%n</pattern>
+    </encoder>
+  </appender>
+
+  <!--  To log to a file:
+    1. set the property INDEXER_LOG_PATH (above) to a valid file path
+    2. uncomment the below appender
+    3. change the appender-ref in the logger elements from STDOUT to INDEXER
+  -->
+  <!-- 
   <appender name="INDEXER" class="ch.qos.logback.core.rolling.RollingFileAppender">
     <file>${INDEXER_LOG_PATH}</file>
     <encoder>
@@ -16,15 +28,16 @@
       <MaxFileSize>20MB</MaxFileSize>
     </triggeringPolicy>
   </appender>
+  -->
   
-   <logger name="ca.umanitoba.fc3indexer" additivity="false" level="debug">
-    <appender-ref ref="INDEXER"/>
+   <logger name="ca.umanitoba.fc3indexer" additivity="false" level="info">
+    <appender-ref ref="STDOUT"/>
   </logger>
-  <logger name="dk.defxws.fedoragsearch.server" additivity="false" level="debug">
-    <appender-ref ref="INDEXER"/>
+  <logger name="dk.defxws.fedoragsearch.server" additivity="false" level="info">
+    <appender-ref ref="STDOUT"/>
   </logger>
-  <logger name="org.fcrepo.client" additivity="false" level="debug">
-    <appender-ref ref="INDEXER"/>
+  <logger name="org.fcrepo.client" additivity="false" level="info">
+    <appender-ref ref="STDOUT"/>
   </logger>
   
 

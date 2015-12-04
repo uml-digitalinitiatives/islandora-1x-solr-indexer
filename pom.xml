@@ -76,6 +76,12 @@
       <groupId>org.apache.camel</groupId>
       <artifactId>camel-http4</artifactId>
       <version>${camel.version}</version>
+      <exclusions>
+        <exclusion>
+	      <groupId>org.apache.geronimo.specs</groupId>
+	      <artifactId>geronimo-servlet_3.0_spec</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     
     <dependency>
@@ -185,9 +191,38 @@
 	  <type>jar</type>
 	  <exclusions>
 	    <exclusion>
+	      <groupId>org.apache.geronimo.specs</groupId>
+	      <artifactId>geronimo-servlet_3.0_spec</artifactId>
+        </exclusion>
+	    <exclusion>
 	      <groupId>org.springframework</groupId>
 	      <artifactId>spring-asm</artifactId>
 	    </exclusion>
+	    <exclusion>
+	      <groupId>org.eclipse.jetty</groupId>
+	      <artifactId>jetty-server</artifactId>
+	    </exclusion>
+	    <exclusion>
+	      <groupId>org.eclipse.jetty</groupId>
+	      <artifactId>jetty-continuation</artifactId>
+	    </exclusion>
+	    <exclusion>
+	      <groupId>org.eclipse.jetty</groupId>
+	      <artifactId>jetty-http</artifactId>
+	    </exclusion>
+	    <exclusion>
+	      <groupId>org.eclipse.jetty</groupId>
+	      <artifactId>jetty-io</artifactId>
+	    </exclusion>
+	    <exclusion>
+	      <groupId>org.eclipse.jetty</groupId>
+	      <artifactId>jetty-util</artifactId>
+	    </exclusion>
+	    <exclusion>
+	      <groupId>org.eclipse.jetty</groupId>
+	      <artifactId>jetty-security</artifactId>
+	    </exclusion>
+
 	  </exclusions>
 	</dependency>
 	
