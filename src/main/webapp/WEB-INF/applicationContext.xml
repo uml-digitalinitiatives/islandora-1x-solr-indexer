@@ -110,7 +110,7 @@
       			<constant>INSERT</constant>
     		</setHeader>
     		<to uri="solr://{{solr.baseUrl}}"/>
-    		<log message="Added ${header.pid} to Solr" loggingLevel="INFO" loggerRef="myLogger"/>
+    		<log message="Added/Updated ${header.pid} to Solr" loggingLevel="INFO" loggerRef="myLogger"/>
   		</route>
   </camelContext>
  
