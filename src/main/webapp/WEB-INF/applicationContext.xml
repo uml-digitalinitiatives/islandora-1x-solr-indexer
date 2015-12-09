@@ -29,12 +29,13 @@
  		<route id="fedora-aggregator">
     		<description>Fedora Message aggregator (10 sec inactivity timeout)</description>
     		<from uri="activemq:{{activemq.queuename}}"/>
-    		<log message="Fedora Object: ${header.pid}, method: ${header.methodName}" loggingLevel="INFO" loggerRef="myLogger"/>
+    		<log message="Raw Fedora Object: ${header.pid}, method: ${header.methodName}" loggingLevel="DEBUG" loggerRef="myLogger"/>
     		<!--  aggregration strategy -->
     		<aggregate strategyRef="latestAggregation" completionTimeout="10000">
       			<correlationExpression>
         			<simple>${header.pid}</simple>
       			</correlationExpression>
+      			<log message="Aggregated Fedora Object: ${header.pid}, method: ${header.methodName}" loggingLevel="INFO" loggerRef="myLogger"/>
       			<to uri="seda:aggregated"/>
     		</aggregate>
   		</route>
@@ -106,6 +107,7 @@
     			<simple>http://{{fcrepo.baseUrl}}{{fcrepo.basePath}}/services</simple>
     		</setHeader>
     		<to uri="xslt:{{foxmlXslt.path}}?transformerFactoryClass=org.apache.xalan.processor.TransformerFactoryImpl"/>
+    		<to uri="log:?logger=myLogger&amp;level=DEBUG"/>
     		<setHeader headerName="SolrOperation">
       			<constant>INSERT</constant>
     		</setHeader>
