@@ -76,6 +76,13 @@
       			</otherwise>
     		</choice>
   		</route>
+  		
+  		<route id="fedora-delete-multicaster">
+  			<description>Fedora Message delete multicaster</description>
+  			<from uri="seda:fedora.delete"/>
+  			<!-- Not doing multicasting so pass to solr -->
+  			<to uri="seda:solr.delete"/>
+  		</route>
  
  		<route id="solr-deletion">
     		<description>Solr Deletion</description>
