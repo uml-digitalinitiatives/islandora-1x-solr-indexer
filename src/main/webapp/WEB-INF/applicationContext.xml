@@ -72,14 +72,15 @@
       			<when>
         			<xpath>/foxml:digitalObject/foxml:objectProperties/foxml:property[@NAME = 'info:fedora/fedora-system:def/model#state' and @VALUE = 'Active']</xpath>
         			<setProperty propertyName="foxml"><simple>${body}</simple></setProperty>
-        			<to uri="seda:fedora.properties"/>
+        			<to uri="direct:fedora.properties"/>
         			<setProperty propertyName="solr"><simple>${body}</simple></setProperty>
         			<setBody><simple>${property.foxml}</simple></setBody>
         			
         			<split strategyRef="stringConcatAggregation">
         				<xpath>/foxml:digitalObject/foxml:datastream</xpath>
-        				<to uri="seda:fedora.dsProcess"/>
+        				<to uri="direct:fedora.dsProcess"/>
         			</split>
+        			<log message="Combined and ready" loggingLevel="TRACE" loggerRef="myLogger"/>
         			<!--  combine the object properties fields and the transformed datastreams, plus wrap in <doc> -->
         			<setBody><simple>&lt;update&gt;&lt;doc&gt;${property.solr}${body}&lt;/doc&gt;&lt;/update&gt;</simple></setBody>
         			<to uri="seda:solr.update"/>
@@ -92,7 +93,7 @@
   		
   		<route id="fedora-foxml-properties">
   			<description>Process the FOXML object properties to get some base Solr fields (including PID)</description>
-  			<from uri="seda:fedora.properties"/>
+  			<from uri="direct:fedora.properties"/>
   			<setBody><xpath>/foxml:digitalObject/foxml:objectProperties</xpath></setBody>
 			<log message="Trying {{foxmlXslt.path}}/FOXML-properties.xslt for PID $simple{header.pid}" loggingLevel="DEBUG" loggerRef="myLogger"/>
 			<to uri="xslt:{{foxmlXslt.path}}/FOXML-properties.xslt?transformerFactoryClass=org.apache.xalan.processor.TransformerFactoryImpl" />
@@ -100,14 +101,13 @@
   		
   		<route id="fedora-ds-process">
   			<description>Process the individual datastreams and return the Solr fields for their data.</description>
-  			<from uri="seda:fedora.dsProcess"/>
+  			<from uri="direct:fedora.dsProcess"/>
   			
   			<choice>
   				<when>
   					<xpath>/foxml:datastream/foxml:datastreamVersion[last()][@MIMETYPE = 'text/xml' or @MIMETYPE = 'application/xml' or @MIMETYPE = 'application/rdf+xml' or @MIMETYPE = 'text/html']</xpath>
   			
 		  			<setHeader headerName="DSID"><xpath resultType="java.lang.String">/foxml:datastream/@ID</xpath></setHeader>
-		  			<log message="DSID is ${header.DSID}" loggingLevel="DEBUG" loggerRef="myLogger"/>
 		  			<doTry>
 			  			<setHeader headerName="Exchange.HTTP_METHOD">
 			          		<constant>GET</constant>
@@ -172,7 +172,6 @@
   		<route id="solr-insertion">
     		<description>Solr Insertion</description>
     		<from uri="seda:solr.update?blockWhenFull=true&amp;concurrentConsumers=5"/>
-    		
     		
     		<to uri="log:?logger=myLogger&amp;level=TRACE"/>
     		<setHeader headerName="SolrOperation">
