@@ -137,7 +137,7 @@
     
     
     <!--  FedoraGSearch dependencies -->
-   <dependency>
+   <!-- <dependency>
 	  <groupId>commons-discovery</groupId>
 	  <artifactId>commons-discovery</artifactId>
 	  <version>${discovery.version}</version>
@@ -225,7 +225,7 @@
 	    </exclusion>
 
 	  </exclusions>
-	</dependency>
+	</dependency>-->
 	
 	
 	
