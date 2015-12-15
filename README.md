@@ -18,7 +18,9 @@ This option **MUST** be set:
 
 The *fedora3.indexer.xslt* directory should contain XSLT files named with the same name as the datastream ID they will process (ie. RELS-EXT.xslt, DC.xslt, etc)
 
-You can specify a file path with ```-Dfedora3.indexer.xslt=file:///full/path/to/xslt```
+You must have at least one xslt named **FOXML.xslt** to handle the object XML.
+
+You can specify the directory path with ```-Dfedora3.indexer.xslt=file:///full/path/to/xslt```
 
 These stylesheets should not output the XML declaration as the resulting XML is re-combined. So please ensure you have a
 ```
@@ -52,7 +54,7 @@ If an appropriate XSLT file does *not* exist, that datastream is skipped.
 
 The datastream ID is available in the XSLT as a parameter called *DSID*, you can also get the PID with a parameter named *pid*. These &lt;xsl:param&gt; statements should be at the top level of your XSLTs.
 
-The resulting XML is concatenated together using the *ca.umanitoba.fc3indexer.StringConcatAggregator* and pushed to Solr as an update.
+The resulting field XML is concatenated together using the *ca.umanitoba.fc3indexer.StringConcatAggregator* wrapped with a &lt;update&gt;&lt;doc&gt; &lt;/doc&gt;&lt;update&gt; and pushed to Solr as an update.
 
 ## Credit
 All credit to [acoburn](https://github.com/acoburn) for this is just an implementation of his camel route wrapped in a war deployment.
