@@ -1,21 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xmlns:camel="http://camel.apache.org/schema/spring"
-    xsi:schemaLocation="
-      http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
-        http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd">
+  xmlns:camel="http://camel.apache.org/schema/spring"
+  xsi:schemaLocation="
+    http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+    http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd">
  
-   <bean id="bridgePropertyPlaceholder" class="org.apache.camel.spring.spi.BridgePropertyPlaceholderConfigurer">
-      <property name="location" value="classpath:application.properties"/>
-    </bean>
+  <bean id="bridgePropertyPlaceholder" class="org.apache.camel.spring.spi.BridgePropertyPlaceholderConfigurer">
+    <property name="location" value="classpath:application.properties"/>
+  </bean>
  
-    <bean id="activemq"
-      class="org.apache.activemq.camel.component.ActiveMQComponent">
-      <property name="requestTimeout" value="2" />
-      <property name="testConnectionOnStartup" value="true" />
-      <property name="brokerURL" value="${activemq.brokerUrl}"/>
-   </bean>
+  <bean id="activemq"
+    class="org.apache.activemq.camel.component.ActiveMQComponent">
+    <property name="requestTimeout" value="2" />
+    <property name="testConnectionOnStartup" value="true" />
+    <property name="brokerURL" value="${activemq.brokerUrl}"/>
+  </bean>
 
   <bean id="myLogger" class="org.slf4j.LoggerFactory" factory-method="getLogger">
       <constructor-arg value="ca.umanitoba.fc3indexer"/>
@@ -193,27 +193,41 @@
  
      <route id="solr-deletion">
         <description>Solr Deletion</description>
-        <from uri="seda:solr.delete"/>
-        <setHeader headerName="SolrOperation">
+        <from uri="seda:solr.delete?blockWhenFull=true&amp;concurrentConsumers={{concurrent.processes}}"/>
+
+        <doTry>
+          <setHeader headerName="SolrOperation">
             <constant>DELETE_BY_ID</constant>
-        </setHeader>
-        <setBody>
+          </setHeader>
+          <setBody>
             <simple>${header.pid}</simple>
-        </setBody>
-        <to uri="solr://{{solr.baseUrl}}"/>
-        <log message="Removed ${header.pid} from Solr" loggingLevel="INFO" loggerRef="myLogger"/>
+          </setBody>
+          <to uri="solr://{{solr.baseUrl}}"/>
+          <log message="Removed ${header.pid} from Solr" loggingLevel="INFO" loggerRef="myLogger"/>
+          <doCatch>
+            <exception>org.apache.solr.common.SolrException</exception>
+            <log message="Solr error on ${header.pid}: ${exception.message}" loggingLevel="ERROR" loggerRef="myLogger"/>
+          </doCatch>
+        </doTry>
       </route>
- 
+
       <route id="solr-insertion">
         <description>Solr Insertion</description>
-        <from uri="seda:solr.update?blockWhenFull=true&amp;concurrentConsumers=5"/>
-        
-        <to uri="log:?logger=myLogger&amp;level=TRACE"/>
-        <setHeader headerName="SolrOperation">
+        <from uri="seda:solr.update?blockWhenFull=true&amp;concurrentConsumers={{concurrent.processes}}"/>
+
+        <doTry>
+          <to uri="log:?logger=myLogger&amp;level=TRACE"/>
+          <setHeader headerName="SolrOperation">
             <constant>INSERT</constant>
-        </setHeader>
-        <to uri="solr://{{solr.baseUrl}}"/>
-        <log message="Added/Updated ${header.pid} to Solr" loggingLevel="INFO" loggerRef="myLogger"/>
+          </setHeader>
+          <to uri="solr://{{solr.baseUrl}}"/>
+          <log message="Added/Updated ${header.pid} to Solr" loggingLevel="INFO" loggerRef="myLogger"/>
+          <doCatch>
+            <exception>org.apache.solr.common.SolrException</exception>
+            <log message="Solr error on ${header.pid}: ${exception.message}" loggingLevel="ERROR" loggerRef="myLogger"/>
+          </doCatch>
+        </doTry>
+
       </route>
   </camelContext>
  

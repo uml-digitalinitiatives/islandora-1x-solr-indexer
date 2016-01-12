@@ -38,6 +38,7 @@ The other configuration options are:
 * fedora3.indexer.solrUrl - The URL of your Solr instance (default: localhost:8080/solr)
 * fedora3.indexer.jmsBroker - The JMS Broker (default: tcp://localhost:61616)
 * fedora3.indexer.jmsQueue - The JMS queue to watch (default: queue:fedora.apim.update)
+* fedora3.indexer.concurrent - Number of concurrent processes to run on Solr insert and delete routes (default: 5)
 
 These can also be overridden by including -D&lt;parameter&gt;=&lt;value&gt; in your JAVA\_OPTS system variable.
 
