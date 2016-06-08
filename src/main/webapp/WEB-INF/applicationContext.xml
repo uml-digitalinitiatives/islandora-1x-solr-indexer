@@ -25,9 +25,29 @@
 
   <bean id="stringConcatAggregation" class="ca.umanitoba.fc3indexer.StringConcatAggregator"/>
  
-    <camelContext id="fedora3-solr-indexer" xmlns="http://camel.apache.org/schema/spring"
+  <camelContext id="fedora3-solr-indexer" xmlns="http://camel.apache.org/schema/spring"
       xmlns:foxml="info:fedora/fedora-system:def/foxml#">
  
+      <restConfiguration component="servlet"/>
+
+      <rest path="/">
+          <description>Rest endpoint to reindex a specific PID</description>
+          <get uri="/{pid}">
+              <to uri="seda:to_reindex?exchangePattern=InOnly"/>
+          </get>
+      </rest>
+
+      <route id="rest-to-reindex">
+          <description>Parse REST request and re-index directly, skipping JMS queue</description>
+          <from uri="seda:to_reindex"/>
+          <setProperty propertyName="pid"><simple>${in.header.pid}</simple></setProperty>
+          <removeHeaders pattern="*"/>
+          <setHeader headerName="pid"><simple>${property.pid}</simple></setHeader>
+          <setHeader headerName="methodName"><constant>indexObject</constant></setHeader>
+          <to uri="seda:aggregated"/>
+          <log message="Added ${property.pid} to direct reindex" loggingLevel="INFO" loggerRef="myLogger"/>
+      </route>
+
      <route id="fedora-aggregator">
         <description>Fedora Message aggregator (10 sec inactivity timeout)</description>
         <from uri="activemq:{{activemq.queuename}}"/>
