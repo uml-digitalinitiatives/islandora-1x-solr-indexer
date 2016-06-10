@@ -24,6 +24,8 @@
   <bean id="latestAggregation" class="org.apache.camel.processor.aggregate.UseLatestAggregationStrategy"/>
 
   <bean id="stringConcatAggregation" class="ca.umanitoba.fc3indexer.StringConcatAggregator"/>
+  
+  <bean id="xsltExistsPredicate" class="ca.umanitoba.fc3indexer.XSLTChecker"/>
  
   <camelContext id="fedora3-solr-indexer" xmlns="http://camel.apache.org/schema/spring"
       xmlns:foxml="info:fedora/fedora-system:def/foxml#">
@@ -64,6 +66,7 @@
       <route id="fedora-routing">
           <description>Fedora message routing</description>
           <from uri="seda:aggregated"/>
+          <setProperty propertyName="pid"><simple>${header.pid}</simple></setProperty>
           <choice>
               <when>
                   <simple>${header.methodName} == 'purgeObject'</simple>
@@ -87,6 +90,7 @@
       <route id="fedora-insert-multicaster">
           <description>Fedora Message insert multicaster</description>
           <from uri="seda:fedora.insert"/>
+          <log message="Started fedora-insert-multicaster" loggingLevel="TRACE" loggerRef="myLogger"/>
           <log message="aggregating ${header.pid}" loggingLevel="DEBUG" loggerRef="myLogger"/>
           <choice>
               <when>
@@ -94,23 +98,17 @@
                   <xpath>/foxml:digitalObject/foxml:objectProperties/foxml:property[@NAME = 'info:fedora/fedora-system:def/model#state' and @VALUE = 'Active']</xpath>
                   <!-- Store FOXML in a property for later -->
                   <setProperty propertyName="foxml"><simple>${body}</simple></setProperty>
-                  <!-- Send it to get the FOXML properties indexed -->
-                  <to uri="direct:fedora.properties"/>
-                  <!-- Store those Solr fields in a property -->
-                  <setProperty propertyName="foxml_properties"><simple>${body}</simple></setProperty>
-                  <!-- Return the FOXML body to start processing datastreams -->
-                  <setBody><simple>${property.foxml}</simple></setBody>
-              
-                  <!-- Split on datastream and process each separately and in parallel.
-                       Aggregate them back together using the String Concatenate method. -->
-                  <split strategyRef="stringConcatAggregation">
-                      <xpath>/foxml:digitalObject/foxml:datastream</xpath>
-                      <to uri="direct:fedora.dsProcess"/>
-                  </split>
-                  
-                  <log message="Combined and ready" loggingLevel="TRACE" loggerRef="myLogger"/>
+
+				<log message="Start multicast" loggingLevel="TRACE" loggerRef="myLogger"/>
+                  <multicast strategyRef="stringConcatAggregation" parallelProcessing="true">
+                  	<!-- Send it to get the FOXML properties indexed -->
+                  	<to uri="direct:fedora.properties"/>
+                  	<!-- Send to process datasteams -->
+                  	<to uri="direct:fedora.dsSplit"/>
+                  </multicast>
+                  <log message="Completed multicast" loggingLevel="TRACE" loggerRef="myLogger"/>
                   <!--  combine the object properties fields and the transformed datastreams, plus wrap in <doc> -->
-              <setBody><simple>&lt;update&gt;&lt;doc&gt;${property.foxml_properties}${body}&lt;/doc&gt;&lt;/update&gt;</simple></setBody>
+              <setBody><simple>&lt;update&gt;&lt;add&gt;&lt;doc&gt;${body}&lt;/doc&gt;&lt;/add&gt;&lt;/update&gt;</simple></setBody>
                   <to uri="seda:solr.update"/>
               </when>
               <otherwise>
@@ -118,11 +116,13 @@
                   <to uri="seda:solr.delete"/>
               </otherwise>
           </choice>
+          <log message="Completed fedora-insert-multicaster" loggingLevel="TRACE" loggerRef="myLogger"/>
       </route>
       
       <route id="fedora-foxml-properties">
           <description>Process the FOXML digitalObject XML to get some base Solr fields (including PID)</description>
           <from uri="direct:fedora.properties"/>
+          <log message="Started fedora-foxml-properties" loggingLevel="TRACE" loggerRef="myLogger"/>
           <!-- Grab the digitalObject nodes from the XML -->
           <setBody><xpath>/foxml:digitalObject</xpath></setBody>
           <!-- Set some headers that are passed as parameters to the XSLT -->
@@ -132,18 +132,46 @@
           <setHeader headerName="FEDORAURL"><simple>{{fcrepo.baseUrl}}</simple></setHeader>
           <setHeader headerName="FEDORAPATH"><simple>{{fcrepo.basePath}}</simple></setHeader>
         
-          <log message="Trying {{foxmlXslt.path}}/FOXML.xslt for PID $simple{header.pid}" loggingLevel="DEBUG" loggerRef="myLogger"/>
-          <to uri="xslt:{{foxmlXslt.path}}/FOXML.xslt?transformerFactoryClass=org.apache.xalan.processor.TransformerFactoryImpl" />
+          <doTry>
+            <log message="Trying {{foxmlXslt.path}}/FOXML.xslt for PID $simple{header.pid}" loggingLevel="DEBUG" loggerRef="myLogger"/>
+            <to uri="xslt:{{foxmlXslt.path}}/FOXML.xslt?transformerFactoryClass=org.apache.xalan.processor.TransformerFactoryImpl" />
+            <doCatch>
+              <exception>java.lang.Exception</exception>
+              <log message="Generic Exception ${header.pid}: ${exception.message}" loggingLevel="ERROR" loggerRef="myLogger"/>
+            </doCatch>
+          </doTry>
+          <log message="Completed fedora-foxml-properties" loggingLevel="TRACE" loggerRef="myLogger"/>
       </route>
+      
+      <route id="fedora-ds-split">
+      	<description>Take the FOXML and split it on datastreams and process them if there is a </description>
+      	<from uri="direct:fedora.dsSplit"/>
+      	<log message="Started fedora-ds-split" loggingLevel="TRACE" loggerRef="myLogger"/>
+      	<setProperty propertyName="foxmlXslt.path"><simple>{{foxmlXslt.path}}</simple></setProperty>
+      	<!-- Split on datastream and process each separately and in parallel.
+             Aggregate them back together using the String Concatenate method. -->
+        <split strategyRef="stringConcatAggregation">
+        	<xpath>/foxml:digitalObject/foxml:datastream</xpath>
+			<to uri="direct:fedora.dsProcess"/>
+		</split>
+		<log message="Aggregated datastreams" loggingLevel="TRACE" loggerRef="myLogger"/>
+		<to uri="log:?logger=myLogger&amp;level=TRACE"/>
+		<log message="Completed fedora-ds-split" loggingLevel="TRACE" loggerRef="myLogger"/>
+	  </route>
       
       <route id="fedora-ds-process">
           <description>Process the individual datastreams and return the Solr fields for their data.</description>
           <from uri="direct:fedora.dsProcess"/>
-
+		  
+		  <log message="Started fedora-ds-process" loggingLevel="TRACE" loggerRef="myLogger"/>
           <!-- Set some headers that are passed as parameters to the XSLT -->
           <setHeader headerName="DSID"><xpath resultType="java.lang.String">/foxml:datastream/@ID</xpath></setHeader>
           <setHeader headerName="mimetype"><xpath resultType="java.lang.String">/foxml:datastream/foxml:datastreamVersion[last()]/@MIMETYPE</xpath></setHeader>
-          <choice>
+		<choice>
+			<when>
+				<method ref="xsltExistsPredicate" method="xsltExists"/>
+		
+              <choice>
               <when>
                   <simple>${header.mimetype} == 'text/xml' or ${header.mimetype} == 'application/xml' or ${header.mimetype} == 'application/rdf+xml' or ${header.mimetype} == 'text/html'</simple>
                   <doTry>
@@ -154,7 +182,7 @@
                       <setHeader headerName="Exchange.HTTP_PATH">
                           <simple>{{fcrepo.basePath}}/objects/$simple{header.pid}/datastreams/$simple{header.DSID}/content</simple>
                       </setHeader>
-                      <log message="Getting datastream ${header.DSID} for ${header.pid} with mimetype ${header.mimetype}" loggingLevel="DEBUG" loggerRef="myLogger"/>
+                      <log message="Getting XML datastream ${header.DSID} for ${header.pid} with mimetype ${header.mimetype}" loggingLevel="DEBUG" loggerRef="myLogger"/>
                       <!-- This actually calls to Fedora to get the above Path with Method -->
                       <to uri="http4://{{fcrepo.baseUrl}}/?authUsername={{fcrepo.authUser}}&amp;authPassword={{fcrepo.authPassword}}"/>
                       <convertBodyTo type="org.w3c.dom.Document"/>
@@ -171,6 +199,11 @@
                               <!-- Could not perform the transform, so set the body to blank
                                    otherwise we append the source datastream to the Solr record. -->
                               <setBody><constant></constant></setBody>
+                              <removeHeaders pattern="*"/>
+                          </doCatch>
+                          <doCatch>
+                          	  <exception>java.lang.Exception</exception>
+                          	  <log message="Generic Exception ${header.pid}: ${exception.message}" loggingLevel="ERROR" loggerRef="myLogger"/>
                           </doCatch>
                           <doFinally>
                               <to uri="log:?logger=myLogger&amp;level=TRACE"/>
@@ -180,6 +213,7 @@
                           <exception>org.apache.camel.component.http4.HttpOperationFailedException</exception>
                           <log message="Exception getting datastream ${header.DSID} from object ${header.pid} -- skipping" loggingLevel="INFO" loggerRef="myLogger"/>
                           <setBody><constant></constant></setBody>
+                          <removeHeaders pattern="*"/>
                       </doCatch>
                   </doTry>
               </when>
@@ -192,7 +226,7 @@
                       <setHeader headerName="Exchange.HTTP_PATH">
                           <simple>{{fcrepo.basePath}}/objects/$simple{header.pid}/datastreams/$simple{header.DSID}/content</simple>
                       </setHeader>
-                      <log message="Getting datastream ${header.DSID} for ${header.pid} with mimetype ${header.mimetype}" loggingLevel="DEBUG" loggerRef="myLogger"/>
+                      <log message="Getting plain text datastream ${header.DSID} for ${header.pid} with mimetype ${header.mimetype}" loggingLevel="DEBUG" loggerRef="myLogger"/>
                       <to uri="http4://{{fcrepo.baseUrl}}/?authUsername={{fcrepo.authUser}}&amp;authPassword={{fcrepo.authPassword}}"/>
                       <!-- For a plain text datastream, we must wrap it in an element and strip any invalid XML characters --> 
                       <setBody>
@@ -209,6 +243,7 @@
                               <exception>java.io.FileNotFoundException</exception>
                               <log message="Exception trying to transform DSID ${header.DSID} on ${header.pid}, possibly there is no stylesheet ${header.DSID}.xslt" loggingLevel="INFO" loggerRef="myLogger"/>
                               <setBody><constant></constant></setBody>
+                              <removeHeaders pattern="*"/>
                           </doCatch>
                           <doFinally>
                               <to uri="log:?logger=myLogger&amp;level=TRACE"/>
@@ -218,6 +253,7 @@
                           <exception>org.apache.camel.component.http4.HttpOperationFailedException</exception>
                           <log message="Exception getting datastream ${header.DSID} from object ${header.pid} -- skipping" loggingLevel="INFO" loggerRef="myLogger"/>
                           <setBody><constant></constant></setBody>
+                          <removeHeaders pattern="*"/>
                       </doCatch>
                   </doTry>
               </when>
@@ -226,6 +262,15 @@
                   <setBody><constant></constant></setBody>
               </otherwise>
           </choice>
+          			</when>
+              <otherwise>
+                  <!-- No XSLT exists for this DSID, return nothing -->
+                  <setBody><constant></constant></setBody>
+              </otherwise>
+          			
+		</choice>
+          
+          <log message="Completed fedora-ds-process" loggingLevel="TRACE" loggerRef="myLogger"/>
       </route>
   
       <route id="fedora-delete-multicaster">
@@ -259,7 +304,7 @@
      <route id="solr-insertion">
          <description>Solr Insertion</description>
          <from uri="seda:solr.update?blockWhenFull=true&amp;concurrentConsumers={{concurrent.processes}}"/>
-
+		 <log message="Started solr-insertion" loggingLevel="TRACE" loggerRef="myLogger"/>
          <doTry>
              <to uri="log:?logger=myLogger&amp;level=TRACE"/>
              <setHeader headerName="SolrOperation">
@@ -271,8 +316,12 @@
                  <exception>org.apache.solr.common.SolrException</exception>
                  <log message="Solr error on ${header.pid}: ${exception.message}" loggingLevel="ERROR" loggerRef="myLogger"/>
              </doCatch>
+             <doCatch>
+             	<exception>java.lang.Exception</exception>
+             	<log message="Generic Exception when inserting to Solr ${header.pid}: ${exception.message}" loggingLevel="ERROR" loggerRef="myLogger"/>
+             </doCatch>
          </doTry>
-
+		 <log message="Completed solr-insertion" loggingLevel="TRACE" loggerRef="myLogger"/>
      </route>
   </camelContext>
  
