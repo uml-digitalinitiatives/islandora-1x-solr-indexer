@@ -139,6 +139,11 @@
 	  <artifactId>logback-classic</artifactId>
 	  <version>${logback.version}</version>
 	</dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <version>1.7.21</version>
+    </dependency>
     
     
     <!--  FedoraGSearch dependencies -->
@@ -238,9 +243,15 @@
     
     
         <!-- testing -->
-    <dependency>
+    <!-- <dependency>
       <groupId>org.apache.camel</groupId>
       <artifactId>camel-test-spring</artifactId>
+      <version>${camel.version}</version>
+      <scope>test</scope>
+    </dependency>-->
+    <dependency>
+      <groupId>org.apache.camel</groupId>
+      <artifactId>camel-testng</artifactId>
       <version>${camel.version}</version>
       <scope>test</scope>
     </dependency>

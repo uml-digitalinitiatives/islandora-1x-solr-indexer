@@ -80,7 +80,7 @@
                       <simple>{{fcrepo.basePath}}/objects/$simple{header.pid}/objectXML</simple>
                   </setHeader>
                   <log message="Getting foxml ${header.pid}" loggingLevel="DEBUG" loggerRef="myLogger"/>
-                  <to uri="http4://{{fcrepo.baseUrl}}/?authUsername={{fcrepo.authUser}}&amp;authPassword={{fcrepo.authPassword}}"/>
+                  <to uri="http4://{{fcrepo.baseUrl}}/?authUsername={{fcrepo.authUser}}&amp;authPassword={{fcrepo.authPassword}}&amp;authenticationPreemptive=true"/>
                   <convertBodyTo type="org.w3c.dom.Document"/>
                   <to uri="seda:fedora.insert"/>
               </otherwise>
@@ -96,17 +96,17 @@
               <when>
                   <!-- Object is Active so index/re-index -->
                   <xpath>/foxml:digitalObject/foxml:objectProperties/foxml:property[@NAME = 'info:fedora/fedora-system:def/model#state' and @VALUE = 'Active']</xpath>
-                  <!-- Store FOXML in a property for later -->
-                  <setProperty propertyName="foxml"><simple>${body}</simple></setProperty>
 
-				<log message="Start multicast" loggingLevel="TRACE" loggerRef="myLogger"/>
                   <multicast strategyRef="stringConcatAggregation" parallelProcessing="true">
-                  	<!-- Send it to get the FOXML properties indexed -->
-                  	<to uri="direct:fedora.properties"/>
-                  	<!-- Send to process datasteams -->
-                  	<to uri="direct:fedora.dsSplit"/>
+                    <!-- Send it to get the FOXML properties indexed -->
+                    <to uri="direct:fedora.properties"/>
+                    <!-- Split on datastream and process each separately and in parallel.
+                         Aggregate them back together using the String Concatenate method. -->
+                    <split strategyRef="stringConcatAggregation" streaming="true">
+                       <tokenize token="foxml:datastream" inheritNamespaceTagName="foxml:digitalObject" xml="true" />
+				       <to uri="direct:fedora.dsProcess"/>
+				    </split>
                   </multicast>
-                  <log message="Completed multicast" loggingLevel="TRACE" loggerRef="myLogger"/>
                   <!--  combine the object properties fields and the transformed datastreams, plus wrap in <doc> -->
               <setBody><simple>&lt;update&gt;&lt;add&gt;&lt;doc&gt;${body}&lt;/doc&gt;&lt;/add&gt;&lt;/update&gt;</simple></setBody>
                   <to uri="seda:solr.update"/>
@@ -127,13 +127,13 @@
           <setBody><xpath>/foxml:digitalObject</xpath></setBody>
           <!-- Set some headers that are passed as parameters to the XSLT -->
           <setHeader headerName="pid"><simple>${header.pid}</simple></setHeader>
-          <setHeader headerName="FEDORAUSER"><simple>{{fcrepo.authUser}}</simple></setHeader>
-          <setHeader headerName="FEDORAPASS"><simple>{{fcrepo.authPassword}}</simple></setHeader>
-          <setHeader headerName="FEDORAURL"><simple>{{fcrepo.baseUrl}}</simple></setHeader>
-          <setHeader headerName="FEDORAPATH"><simple>{{fcrepo.basePath}}</simple></setHeader>
+          <setHeader headerName="FEDORAUSER"><simple>${properties:fcrepo.authUser}}</simple></setHeader>
+          <setHeader headerName="FEDORAPASS"><simple>${properties:fcrepo.authPassword}</simple></setHeader>
+          <setHeader headerName="FEDORAURL"><simple>${properties:fcrepo.baseUrl}</simple></setHeader>
+          <setHeader headerName="FEDORAPATH"><simple>${properties:fcrepo.basePath}</simple></setHeader>
         
           <doTry>
-            <log message="Trying {{foxmlXslt.path}}/FOXML.xslt for PID $simple{header.pid}" loggingLevel="DEBUG" loggerRef="myLogger"/>
+            <log message="Trying ${properties:foxmlXslt.path}/FOXML.xslt for PID ${header.pid}" loggingLevel="DEBUG" loggerRef="myLogger"/>
             <to uri="xslt:{{foxmlXslt.path}}/FOXML.xslt?transformerFactoryClass=org.apache.xalan.processor.TransformerFactoryImpl" />
             <doCatch>
               <exception>java.lang.Exception</exception>
@@ -143,22 +143,6 @@
           <log message="Completed fedora-foxml-properties" loggingLevel="TRACE" loggerRef="myLogger"/>
       </route>
       
-      <route id="fedora-ds-split">
-      	<description>Take the FOXML and split it on datastreams and process them if there is a </description>
-      	<from uri="direct:fedora.dsSplit"/>
-      	<log message="Started fedora-ds-split" loggingLevel="TRACE" loggerRef="myLogger"/>
-      	<setProperty propertyName="foxmlXslt.path"><simple>{{foxmlXslt.path}}</simple></setProperty>
-      	<!-- Split on datastream and process each separately and in parallel.
-             Aggregate them back together using the String Concatenate method. -->
-        <split strategyRef="stringConcatAggregation">
-        	<xpath>/foxml:digitalObject/foxml:datastream</xpath>
-			<to uri="direct:fedora.dsProcess"/>
-		</split>
-		<log message="Aggregated datastreams" loggingLevel="TRACE" loggerRef="myLogger"/>
-		<to uri="log:?logger=myLogger&amp;level=TRACE"/>
-		<log message="Completed fedora-ds-split" loggingLevel="TRACE" loggerRef="myLogger"/>
-	  </route>
-      
       <route id="fedora-ds-process">
           <description>Process the individual datastreams and return the Solr fields for their data.</description>
           <from uri="direct:fedora.dsProcess"/>
@@ -167,14 +151,15 @@
           <!-- Set some headers that are passed as parameters to the XSLT -->
           <setHeader headerName="DSID"><xpath resultType="java.lang.String">/foxml:datastream/@ID</xpath></setHeader>
           <setHeader headerName="mimetype"><xpath resultType="java.lang.String">/foxml:datastream/foxml:datastreamVersion[last()]/@MIMETYPE</xpath></setHeader>
+          <log message="DSID (${header.DSID}), mimetype (${header.mimetype})" loggingLevel="DEBUG" loggerRef="myLogger" />
 		<choice>
 			<when>
+			    <!-- Java bean test for the existance of the file at ${properties:foxmlXslt.path}${header.DSID}.xslt -->
 				<method ref="xsltExistsPredicate" method="xsltExists"/>
-		
-              <choice>
-              <when>
-                  <simple>${header.mimetype} == 'text/xml' or ${header.mimetype} == 'application/xml' or ${header.mimetype} == 'application/rdf+xml' or ${header.mimetype} == 'text/html'</simple>
-                  <doTry>
+			    <choice>
+                  <when>
+                    <simple>${header.mimetype} == 'text/xml' or ${header.mimetype} == 'application/xml' or ${header.mimetype} == 'application/rdf+xml' or ${header.mimetype} == 'text/html'</simple>
+                    <doTry>
                       <!-- These define what we get from Fedora and how -->
                       <setHeader headerName="Exchange.HTTP_METHOD">
                           <constant>GET</constant>
@@ -184,18 +169,18 @@
                       </setHeader>
                       <log message="Getting XML datastream ${header.DSID} for ${header.pid} with mimetype ${header.mimetype}" loggingLevel="DEBUG" loggerRef="myLogger"/>
                       <!-- This actually calls to Fedora to get the above Path with Method -->
-                      <to uri="http4://{{fcrepo.baseUrl}}/?authUsername={{fcrepo.authUser}}&amp;authPassword={{fcrepo.authPassword}}"/>
+                      <to uri="http4://{{fcrepo.baseUrl}}/?authUsername={{fcrepo.authUser}}&amp;authPassword={{fcrepo.authPassword}}&amp;authenticationPreemptive=true"/>
                       <convertBodyTo type="org.w3c.dom.Document"/>
                       <to uri="log:?logger=myLogger&amp;level=TRACE"/>
                       <doTry>
-                          <log message="Trying {{foxmlXslt.path}}/$simple{header.DSID}.xslt?" loggingLevel="DEBUG" loggerRef="myLogger"/>
+                          <log message="Trying ${properties:foxmlXslt.path}/${header.DSID}.xslt?" loggingLevel="DEBUG" loggerRef="myLogger"/>
                           <recipientList>
-                              <simple>xslt:{{foxmlXslt.path}}/$simple{header.DSID}.xslt?transformerFactoryClass=org.apache.xalan.processor.TransformerFactoryImpl</simple>
+                              <simple>xslt:${properties:foxmlXslt.path}/${header.DSID}.xslt?transformerFactoryClass=org.apache.xalan.processor.TransformerFactoryImpl</simple>
                           </recipientList>
                           <doCatch>
                               <exception>javax.xml.transform.TransformerException</exception>
                               <exception>java.io.FileNotFoundException</exception>
-                              <log message="Exception trying to transform DSID ${header.DSID} on ${header.pid}, possibly there is no stylesheet ${header.DSID}.xslt" loggingLevel="INFO" loggerRef="myLogger"/>
+                              <log message="Exception trying to transform DSID ${header.DSID} on ${header.pid}, possibly there is no stylesheet ${header.DSID}.xslt - ${exception.message}" loggingLevel="INFO" loggerRef="myLogger"/>
                               <!-- Could not perform the transform, so set the body to blank
                                    otherwise we append the source datastream to the Solr record. -->
                               <setBody><constant></constant></setBody>
@@ -224,19 +209,22 @@
                           <constant>GET</constant>
                       </setHeader>
                       <setHeader headerName="Exchange.HTTP_PATH">
-                          <simple>{{fcrepo.basePath}}/objects/$simple{header.pid}/datastreams/$simple{header.DSID}/content</simple>
+                          <simple>${properties:fcrepo.basePath}/objects/${header.pid}/datastreams/${header.DSID}/content</simple>
                       </setHeader>
                       <log message="Getting plain text datastream ${header.DSID} for ${header.pid} with mimetype ${header.mimetype}" loggingLevel="DEBUG" loggerRef="myLogger"/>
-                      <to uri="http4://{{fcrepo.baseUrl}}/?authUsername={{fcrepo.authUser}}&amp;authPassword={{fcrepo.authPassword}}"/>
+                      <to uri="http4://{{fcrepo.baseUrl}}/?authUsername={{fcrepo.authUser}}&amp;authPassword={{fcrepo.authPassword}}&amp;authenticationPreemptive=true"/>
+                      <convertBodyTo type="java.lang.String"/>
                       <!-- For a plain text datastream, we must wrap it in an element and strip any invalid XML characters --> 
                       <setBody>
                           <simple>&lt;${header.DSID}&gt;${body.replaceAll("[^\u0009\u000A\u000D\u0020-\uD7FF\uE000-\uFFFD\u10000-\u10FFF]+","")}&lt;/${header.DSID}&gt;</simple>
                       </setBody>
+                      <!-- The convert it to a DOM Document -->
+                      <convertBodyTo type="org.w3c.dom.Document"/>
                       <to uri="log:?logger=myLogger&amp;level=TRACE"/>
                       <doTry>
-                          <log message="Trying {{foxmlXslt.path}}/$simple{header.DSID}.xslt?" loggingLevel="DEBUG" loggerRef="myLogger"/>
+                          <log message="Trying ${properties:foxmlXslt.path}/${header.DSID}.xslt?" loggingLevel="DEBUG" loggerRef="myLogger"/>
                           <recipientList>
-                              <simple>xslt:{{foxmlXslt.path}}/$simple{header.DSID}.xslt?transformerFactoryClass=org.apache.xalan.processor.TransformerFactoryImpl</simple>
+                              <simple>xslt:${properties:foxmlXslt.path}/${header.DSID}.xslt?transformerFactoryClass=org.apache.xalan.processor.TransformerFactoryImpl</simple>
                           </recipientList>
                           <doCatch>
                               <exception>javax.xml.transform.TransformerException</exception>
