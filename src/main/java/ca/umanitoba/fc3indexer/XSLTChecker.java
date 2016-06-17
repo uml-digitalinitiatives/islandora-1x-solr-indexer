@@ -14,7 +14,6 @@ public class XSLTChecker {
     @Handler
     public boolean xsltExists(@Header("DSID") final String dsid,
             @Simple(value = "${properties:foxmlXslt.path}") final String xsltDir) {
-        LOGGER.trace("DSID ({}) and xslt path ({})", dsid, xsltDir);
         String tmpFile = xsltDir;
         if (tmpFile.startsWith("file://")) {
             tmpFile = tmpFile.replace("file://", "");
@@ -23,10 +22,9 @@ public class XSLTChecker {
             tmpFile = tmpFile + "/";
         }
         tmpFile = tmpFile + dsid + ".xslt";
-        LOGGER.trace("tmpFile is now {}", tmpFile);
         final File xsltFile = new File(tmpFile);
         final Boolean exists = xsltFile.exists();
-        LOGGER.trace("returning {}", (exists ? "true" : "false"));
+        LOGGER.debug("DSID {} and path {}, returning {}", dsid, xsltDir, (exists ? "true" : "false"));
         return exists;
     }
 
