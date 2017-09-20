@@ -1,4 +1,4 @@
-package ca.umanitoba.fc3indexer;
+package ca.umanitoba.dam.islandora.fc3indexer;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.processor.aggregate.AggregationStrategy;

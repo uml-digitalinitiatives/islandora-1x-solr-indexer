@@ -55,7 +55,7 @@ If an appropriate XSLT file does *not* exist, that datastream is skipped.
 
 The datastream ID is available in the XSLT as a parameter called *DSID*, you can also get the PID with a parameter named *pid*. These &lt;xsl:param&gt; statements should be at the top level of your XSLTs.
 
-The resulting field XML is concatenated together using the *ca.umanitoba.fc3indexer.StringConcatAggregator* wrapped with a &lt;update&gt;&lt;doc&gt; &lt;/doc&gt;&lt;update&gt; and pushed to Solr as an update.
+The resulting field XML is concatenated together using the *ca.umanitoba.dam.islandora.fc3indexer.StringConcatAggregator* wrapped with a &lt;update&gt;&lt;doc&gt; &lt;/doc&gt;&lt;update&gt; and pushed to Solr as an update.
 
 ## Credit
 All credit to [acoburn](https://github.com/acoburn) for this is just an implementation of his camel route wrapped in a war deployment.

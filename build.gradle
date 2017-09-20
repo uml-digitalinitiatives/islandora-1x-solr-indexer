@@ -1,0 +1,161 @@
+apply plugin: 'maven'
+apply plugin: 'jacoco'
+apply plugin: 'eclipse-wtp'
+apply plugin: 'java'
+apply plugin: 'osgi'
+
+group = 'ca.umanitoba.dam.islandora.fc3indexer'
+
+repositories {
+	mavenCentral()
+    mavenLocal()
+}
+
+// Java 8 only
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+ext {
+	vendor = "Digital Initiatives : University of Manitoba Libraries"
+    docURL = "https://github.com/uml-digitalinitiatives/fc3-camel-indexer"
+    description = "Index Fedora 3 content into Solr"
+    license = "MIT"
+    buildName = "islandora-1x-solr-indexer"
+    versions = [
+    	camel : '2.18.1',
+    	camelRange : '[2.18, 3)',
+    	activemq : '5.14.1',
+    	activemqRange : '[5.14.5, 6)',
+    	slf4j : '1.7.7',
+    	joda : '2.6',
+    	apacheCommons : '2.4',
+    	commonsCodec : '1.10',
+    	commonsLang : '3.4',
+    	httpclient : '4.5.2',
+    	httpclientRange : '[4.5, 5)',
+    	httpcore : '4.4.3',
+    	httpcoreRange : '[4.4, 5)',
+    	xalan : '2.7.0',
+		mockito : '1.10.19',
+    	asmCommons : '5.0.3'
+    ]
+    defaultOsgiImports = 'org.osgi.service.blueprint;version="[1,2)",*'
+}
+
+dependencies {
+	compile group: 'org.apache.camel', name: 'camel-core', version: versions.camel
+	compile group: 'org.apache.camel', name: 'camel-blueprint', version: versions.camel
+	compile group: 'org.apache.camel', name: 'camel-http4', version: versions.camel
+	compile group: 'org.apache.camel', name: 'camel-solr', version: versions.camel
+	compile group: 'org.apache.camel', name: 'camel-spark-rest', version: versions.camel
+	compile group: 'org.apache.commons', name: 'commons-lang3', version: versions.commonsLang
+	compile group: 'org.slf4j', name: 'slf4j-api', version: versions.slf4j
+	compile group: 'commons-io', name: 'commons-io', version: versions.apacheCommons
+
+	runtime group: 'xalan', name: 'xalan', version: versions.xalan
+
+	testCompile group: 'org.apache.camel', name: 'camel-test-blueprint', version: versions.camel
+  	testCompile group: 'org.slf4j', name: 'slf4j-log4j12', version: versions.slf4j
+	testCompile group: 'org.mockito', name: 'mockito-all', version: versions.mockito
+	testCompile group: 'org.ow2.asm', name: 'asm-commons', version: versions.asmCommons
+	
+}
+
+// Copy configuration files over to output
+task processConfig(type: Copy) {
+	from('src/main/cfg') {
+		include '**/*.cfg'
+	}
+	into 'build/cfg/main'
+}
+
+// Make a sources jar (if you want it)
+task sourceJar(type: Jar) {
+	classifier 'sources'
+	from sourceSets.main.allSource
+}
+
+task javadocJar(type: Jar) {
+    classifier 'javadoc'
+    from javadoc
+}
+
+artifacts {
+    archives javadocJar 
+    archives sourceJar
+}
+
+classes {
+    classes.dependsOn processConfig
+}
+
+artifacts {
+    archives (file('build/cfg/main/ca.umanitoba.dam.islandora.fc3indexer.cfg')) {
+        classifier 'configuration'
+        type 'cfg'
+    }
+	archives (file('build/resources/main/features.xml')) {
+        classifier 'features'
+        type 'xml'
+    }
+}
+
+processResources {
+	from ('src/main/resources') {
+    	outputs.upToDateWhen { false  }
+    	exclude(['OSGI-INF/**', 'lib/**'])
+    	expand project.properties
+    }
+}
+
+
+// Make our JAR file
+jar {
+    manifest {
+      description project.description
+      vendor project.vendor
+      docURL project.docURL
+      license project.license
+
+      instruction 'Import-Package', "org.apache.activemq," +
+                "org.apache.activemq.pool," +
+      			"org.apache.activemq.camel.component;version=\"${versions.activemqRange}\"," +
+      			"org.apache.commons.io," +
+      			"org.apache.commons.lang3," +
+      			"org.apache.camel.component.http4," +
+      			"org.apache.camel.http.common," +
+      			"org.apache.camel.component.sparkrest," +
+      			"org.apache.camel.component.jms," +
+      			"org.apache.camel.component.solr," +
+      			"org.apache.camel;version=\"${versions.camelRange}\"," +
+                defaultOsgiImports
+      instruction 'Export-Package', 'ca.umanitoba.dam.islandora.fc3indexer'
+      instruction 'Bundle-Classpath', '.,' +
+      			"lib/gsearchlibs-2.7.jar"
+    }
+}
+
+sourceSets {
+    test {
+    	output.resourcesDir = "build/resources/test"
+    	resources {
+    		srcDir "src/test/resources"
+    	}
+    }
+}
+
+test {
+	testLogging {
+		// Make sure output from
+		// standard out or error is shown
+		// in Gradle output.
+		// showStandardStreams = true
+		events 'standard_out', 'standard_error'
+		exceptionFormat = 'full'
+	}
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '2.0'
+}
+

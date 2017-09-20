@@ -1,0 +1,28 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<features xmlns="http://karaf.apache.org/xmlns/features/v1.3.0" name="${buildName}-${project.version}">
+
+  <repository>mvn:org.apache.camel.karaf/apache-camel/${versions.camel}/xml/features</repository>
+  <repository>mvn:org.apache.activemq/activemq-karaf/${versions.activemq}/xml/features</repository>
+
+ <feature name="islandora-1x-solr-indexer" version="${project.version}" start-level="80">
+    <details>Consume Fedora 3 JMS messages and index the objects into Solr</details>
+
+    <feature version="${versions.camelRange}">camel-blueprint</feature>
+    <feature version="${versions.camelRange}">camel-jms</feature>
+    <feature version="${versions.camelRange}">camel-http4</feature>
+    <feature version="${versions.camelRange}">camel-servlet</feature>
+    <feature version="${versions.camelRange}">camel-solr</feature>
+    <feature version="${versions.camelRange}">camel-spark-rest</feature>
+    <feature version="${versions.activemqRange}">activemq-camel</feature>
+    <bundle dependency="true">mvn:commons-io/commons-io/${versions.apacheCommons}</bundle>
+    <bundle dependency="true">mvn:org.apache.commons/commons-lang3/${versions.commonsLang}</bundle>
+    <bundle dependency="true">mvn:org.apache.httpcomponents/httpclient-osgi/${versions.httpclient}</bundle>
+    <bundle dependency="true">mvn:org.apache.httpcomponents/httpcore-osgi/${versions.httpcore}</bundle>
+    <bundle dependency="true">mvn:org.apache.activemq/activemq-pool/${versions.activemq}</bundle>
+
+    <bundle>mvn:ca.umanitoba.dam.islandora.fc3indexer/islandora-1x-solr-indexer/${project.version}</bundle>
+
+    <configfile finalname="/etc/ca.umanitoba.dam.islandora.fc3indexer.cfg">mvn:ca.umanitoba.dam.islandora.fc3indexer/islandora-1x-solr-indexer/${project.version}/cfg/configuration</configfile>
+
+  </feature>
+</features>

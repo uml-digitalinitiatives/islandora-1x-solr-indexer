@@ -1,4 +1,4 @@
-package ca.umanitoba.fc3indexer;
+package ca.umanitoba.dam.islandora.fc3indexer;
 
 import static org.apache.commons.lang3.StringEscapeUtils.escapeXml10;
 
