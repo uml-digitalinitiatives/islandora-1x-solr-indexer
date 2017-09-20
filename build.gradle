@@ -24,7 +24,7 @@ ext {
     versions = [
     	camel : '2.18.1',
     	camelRange : '[2.18, 3)',
-    	activemq : '5.14.1',
+    	activemq : '5.14.5',
     	activemqRange : '[5.14.5, 6)',
     	slf4j : '1.7.7',
     	joda : '2.6',
