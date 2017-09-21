@@ -15,6 +15,8 @@ import static org.apache.camel.builder.PredicateBuilder.not;
 import static org.slf4j.LoggerFactory.getLogger;
 
 import org.apache.camel.BeanInject;
+import org.apache.camel.Exchange;
+import org.apache.camel.Processor;
 //import org.apache.camel.Exchange;
 //import org.apache.camel.Processor;
 import org.apache.camel.PropertyInject;
@@ -23,7 +25,6 @@ import org.apache.camel.processor.aggregate.AggregationStrategy;
 import org.apache.solr.common.SolrException;
 import org.slf4j.Logger;
 import org.w3c.dom.Document;
-
 
 public class FedoraSolrIndexer extends RouteBuilder {
 
@@ -40,6 +41,8 @@ public class FedoraSolrIndexer extends RouteBuilder {
 
     @PropertyInject(value = "reindexer.port")
     private int restPortNum;
+
+    private Processor string2xml = new StringToXmlProcessor();
 
     @Override
     public void configure() throws Exception {
@@ -97,7 +100,16 @@ public class FedoraSolrIndexer extends RouteBuilder {
                             .log(ERROR, LOGGER, "Unable to get {{fcrepo.baseUrl}}{{fcrepo.basePath}}/object/${property[pid]}/objectXML")
                     .endChoice()
             .end();
-
+        
+        /**
+         * Determine if the object has Active state and re-index otherwise delete from Solr.
+         * 
+         * Called from fedora-routing
+         * Calls: fedora-foxml-properties
+         *          fedora-ds-process
+         *          fedora-delete-multicaster
+         *          solr-insertion
+         */
         from("direct:fedora.insert")
             .routeId("fedora-insert-multicaster")
             .description("Fedora Message insert multicaster")
@@ -114,11 +126,11 @@ public class FedoraSolrIndexer extends RouteBuilder {
                     .setBody(simple("<update><add><doc>${body}</doc></add></update>"))
                     .to("seda:solr.update?exchangePattern=InOnly")
                 .endChoice()
-            .otherwise()
-                .to("direct:solr.delete")
+                .otherwise()
+                    .to("direct:solr.delete")
             .end()
             .log(TRACE,  LOGGER, "Completed fedora-insert-multicaster");
-
+        
         from("direct:fedora.properties")
             .routeId("fedora-foxml-properties")
             .description("Process the FOXML digitalObject XML to get some base Solr fields (including PID)")
@@ -129,8 +141,7 @@ public class FedoraSolrIndexer extends RouteBuilder {
             .setHeader("FEDORAPASS", exchangeProperty("fcrepo.authPassword"))
             .setHeader("FEDORAURL", exchangeProperty("fcrepo.baseUrl"))
             .setHeader("FEDORAPATH", exchangeProperty("fcrepo.basePath"))
-            .log(DEBUG, LOGGER, "xslt is ${properties:xslt.path}")
-            .to("xslt:{{xslt.path}}/FOXML.xslt?transformerFactoryClass=org.apache.xalan.processor.TransformerFactoryImpl")
+            .to("xslt:{{xslt.path}}/FOXML.xslt?transformerFactory=#xsltTransformer")
             .log(TRACE, LOGGER, "Completed fedora-foxml-properties");
 
         from("direct:fedora.dsProcess")
@@ -147,29 +158,52 @@ public class FedoraSolrIndexer extends RouteBuilder {
                             header("mimetype").isEqualTo("text/xml"),
                             header("mimetype").isEqualTo("application/xml"),
                             header("mimetype").isEqualTo("application/rdf+xml"),
-                            header("mimetype").isEqualTo("text/html")
-                        ))
-                            .to("direct:dsXML")
+                            header("mimetype").isEqualTo("text/html")))
+                                .to("direct:dsXML")
                         .when(header("mimetype").isEqualTo("text/plain"))
                             .to("direct:dsText")
                         .otherwise()
                             .setBody(constant(""))
                     .end()
-                    .to("log:?logger=myLogger&level=TRACE")
+                    .to("log:ca.umanitoba.dam.islandora.fc3indexer?level=TRACE")
                     .log(DEBUG, LOGGER, "Trying {{xslt.path}}/${header[DSID]}.xslt")
-                    .recipientList(simple("xslt:{{xslt.path}}/${header[DSID]}.xslt?transformerFactoryClass=org.apache.xalan.processor.TransformerFactoryImpl"))
-                    .endChoice()
-               .otherwise()
-                 .setBody(constant(""))
-             .end()
-             .log(TRACE, LOGGER, "Completed fedora-ds-process");
+                    .recipientList(simple("xslt:{{xslt.path}}/${header[DSID]}.xslt?transformerFactory=#xsltTransformer"))
+                .endChoice()
+                .otherwise()
+                    .setBody(constant(""))
+            .end()
+            .log(TRACE, LOGGER, "Completed fedora-ds-process");
+        
 
+
+        
+        
+        
+        from("seda:solr.update?blockWhenFull=true&concurrentConsumers={{concurrent.processes}}")
+            .routeId("solr-insertion")
+            .description("Solr Insertion")
+            .onException(SolrException.class)
+                .handled(true)
+                .log(ERROR, LOGGER, "Solr error ${exception.type} on ${header[pid]}: ${exception.message}")
+            .end()
+            .onException(Exception.class)
+                .handled(true)
+                .log(ERROR, LOGGER, "Generic Exception (${exception.type}) for ${header[pid]} : ${exception}")
+            .end()
+            .log(TRACE, LOGGER, "Started solr-insertion")
+            .to("log:ca.umanitoba.dam.islandora.fc3indexer?level=TRACE")
+            .setHeader("SolrOperation", constant(OPERATION_INSERT))
+            .to("{{solr.baseUrl}}")
+            .log(INFO, LOGGER, "Added/Updated ${header[pid]} to Solr")
+            .log(TRACE, LOGGER, "Completed solr-insertion");
+        
         from("direct:dsXML")
             .routeId("fedora-ds-isXML")
             .description("The datastream has an XML/HTML mimetype")
             .removeHeaders("CamelHttp*")
             .setHeader(HTTP_METHOD, constant("GET"))
-            .setHeader(HTTP_URI, simple("{{fcrepo.baseUrl}}{{fcrepo.basePath}}/objects/${header[pid]}/datastreams/${header[DSID]}/content"))
+            .setHeader(HTTP_URI, simple(
+                "{{fcrepo.baseUrl}}{{fcrepo.basePath}}/objects/${header[pid]}/datastreams/${header[DSID]}/content"))
             .log(DEBUG, LOGGER, "Getting XML datastream ${header[DSID]} for ${header[pid]}")
             .to("direct:get-url")
             .filter(body().isNotNull()).setBody(body().convertTo(Document.class));
@@ -179,11 +213,11 @@ public class FedoraSolrIndexer extends RouteBuilder {
             .description("The datastream has a text mimetype")
             .removeHeaders("CamelHttp*")
             .setHeader(HTTP_METHOD, constant("GET"))
-            .setHeader(HTTP_URI, simple("{{fcrepo.baseUrl}}{{fcrepo.basePath}}/objects/${header[pid]}/datastreams/${header[DSID]}/content"))
+            .setHeader(HTTP_URI, simple(
+                "{{fcrepo.baseUrl}}{{fcrepo.basePath}}/objects/${header[pid]}/datastreams/${header[DSID]}/content"))
             .log(DEBUG, LOGGER, "Getting Text datastream ${header[DSID]} for ${header[pid]}")
             .to("direct:get-url")
-            .filter(body().isNotNull()).setBody(body().convertToString()).to("bean:StringUtils?method=convertToXML");
-
+            .filter(body().isNotNull()).process(string2xml);
 
         from("direct:get-url")
             .routeId("fedora-get-url")
@@ -215,32 +249,14 @@ public class FedoraSolrIndexer extends RouteBuilder {
             .setBody(header("pid"))
             .to("{{solr.baseUrl}}")
             .log(INFO, LOGGER, "Removed ${header.pid} from Solr");
-
-        from("seda:solr.update?blockWhenFull=true&concurrentConsumers={{concurrent.processes}}")
-            .routeId("solr-insertion")
-            .description("Solr Insertion")
-            .onException(SolrException.class)
-                .handled(true)
-                .log(ERROR, LOGGER, "Solr error ${exception.type} on ${header[pid]}: ${exception.message}")
-            .end()
-            .onException(Exception.class)
-                .handled(true)
-                .log(ERROR, LOGGER, "Generic Exception (${exception.type}) for ${header[pid]} : ${exception}")
-            .end()
-            .log(TRACE, LOGGER, "Started solr-insertion")
-            .to("log:ca.umanitoba.dam.islandora.fc3indexer?level=TRACE")
-            .setHeader("SolrOperation", constant(OPERATION_INSERT))
-            .to("{{solr.baseUrl}}")
-            .log(INFO,  LOGGER, "Added/Updated ${header[pid]} to Solr")
-            .log(TRACE, LOGGER, "Completed solr-insertion");
-
+    
         from("seda:dead-letter-log")
             .routeId("log-and-dead-letter")
             .description("Logs why a request is ending up here and then park it in the dead letter queue")
             .choice()
                 .when(not(header("dsid").isNull()))
                     .log(WARN, LOGGER,
-                        "DEAD LETTER: pid (${header[pid]}), dsid (${header[dsid]}), message - ${exception.message}")
+                    "DEAD LETTER: pid (${header[pid]}), dsid (${header[dsid]}), message - ${exception.message}")
                 .otherwise()
                     .log(WARN, LOGGER, "DEAD LETTER: pid (${header[pid]}), message - ${exception.message}")
             .end()

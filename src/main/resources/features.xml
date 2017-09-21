@@ -19,6 +19,8 @@
     <bundle dependency="true">mvn:org.apache.httpcomponents/httpclient-osgi/${versions.httpclient}</bundle>
     <bundle dependency="true">mvn:org.apache.httpcomponents/httpcore-osgi/${versions.httpcore}</bundle>
     <bundle dependency="true">mvn:org.apache.activemq/activemq-pool/${versions.activemq}</bundle>
+    <bundle start-level="50" dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.xalan/${versions.xalanOsgi}</bundle>
+    <bundle start-level="50" dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.bcel/${versions.bcelOsgi}</bundle>
 
     <bundle>mvn:ca.umanitoba.dam.islandora.fc3indexer/islandora-1x-solr-indexer/${project.version}</bundle>
 

@@ -31,7 +31,7 @@
       <cm:property name="completion.timeout" value="1000"/>
       
       <!-- Port to open the reindexing endpoint -->
-      <cm:property name="reindexer.port" value="9999"/>
+      <cm:property name="reindexer.port" value="9111"/>
       
     </cm:default-properties>
   </cm:property-placeholder>
@@ -41,8 +41,8 @@
   <bean id="stringConcatAggregation" class="ca.umanitoba.dam.islandora.fc3indexer.StringConcatAggregator"/>
   
   <bean id="xsltExistsPredicate" class="ca.umanitoba.dam.islandora.fc3indexer.XSLTChecker"/>
-
-  <bean id="StringUtils" class="ca.umanitoba.dam.islandora.fc3indexer.StringUtils"/>
+  
+  <bean id="xsltTransformer" class="org.apache.xalan.processor.TransformerFactoryImpl"/>
 
   <camelContext id="UmlFedora3SolrIndexerTest" xmlns="http://camel.apache.org/schema/blueprint">
     <package>ca.umanitoba.dam.islandora.fc3indexer</package>

@@ -45,8 +45,8 @@
   <bean id="stringConcatAggregation" class="ca.umanitoba.dam.islandora.fc3indexer.StringConcatAggregator"/>
   
   <bean id="xsltExistsPredicate" class="ca.umanitoba.dam.islandora.fc3indexer.XSLTChecker"/>
-
-  <bean id="StringUtils" class="ca.umanitoba.dam.islandora.fc3indexer.StringUtils"/>
+  
+  <bean id="xsltTransformer" class="org.apache.xalan.processor.TransformerFactoryImpl"/>
 
   <bean id="jmsConnectionFactory" class="org.apache.activemq.ActiveMQConnectionFactory">
     <property name="brokerURL" value="${jms.brokerUrl}"/>
@@ -67,7 +67,7 @@
 
   <bean id="activemq" class="org.apache.activemq.camel.component.ActiveMQComponent">
     <property name="configuration" ref="jmsConfig"/>
-    <!-- <property name="connectionFactory" ref="jmsConnectionFactory"/> -->
+    <!-- <property name="connectionFactory" ref="jmsConnectionFactory"/>-->
   </bean>
   
   <camelContext id="UmlFedora3SolrIndexer" xmlns="http://camel.apache.org/schema/blueprint">
