@@ -1,26 +1,27 @@
-# fc3-camel-indexer
-## Purpose
-Replace the aging GSearch indexer with a simple camel route that could be extended easily.
+# islandora-1x-solr-indexer
+## Information
+This replaces the GSearch indexer with a simple camel route that could be extended easily.
+
+This is also an OSGI bundle and feature you can deploy to a Karaf container.
 
 ## Deployment
 1. Clone the repository.
 1. Change into the directory.
-1. Run ```mvn clean install```
-1. Copy the fc3-camel-indexer.war file to your webapp container.
-1. Configure as below.
+1. Run `sudo ./gradlew build install`.
+1. This creates a new `build` directory, the absolute path to this is your `${build_dir}`
+1. Login to your Karaf container.
+1. Add the new repository `repo-add file:${build_dir}/resources/main/features.xml`
+1. Refresh the repositories (to ensure you added it correctly), `repo-refresh`
+1. Install the solr-indexer `feature:install islandora-1x-solr-indexer`
 
 ## Configuration
-Uses several overridable java options.
+Configuration is via the deployed file in `${KARAF_HOME}/etc/ca.umanitoba.dam.islandora.fc3indexer.cfg`
 
-This option **MUST** be set:
+You **MUST** configure the location of your XSLT directory in the [`xslt.path` option](https://github.com/uml-digitalinitiatives/islandora-1x-solr-indexer/blob/osgi-package/src/main/cfg/ca.umanitoba.dam.islandora.fc3indexer.cfg#L9).
 
-* fedora3.indexer.xslt - The directory of the XSLTs to apply
+This *xslt.path* directory should contain XSLT files named with the same name as the datastream ID they will process (ie. RELS-EXT.xslt, DC.xslt, etc)
 
-The *fedora3.indexer.xslt* directory should contain XSLT files named with the same name as the datastream ID they will process (ie. RELS-EXT.xslt, DC.xslt, etc)
-
-You must have at least one xslt named **FOXML.xslt** to handle the object XML.
-
-You can specify the directory path with ```-Dfedora3.indexer.xslt=file:///full/path/to/xslt```
+You **MUST** have at least one xslt named **FOXML.xslt** to handle the object XML.
 
 These stylesheets should not output the XML declaration as the resulting XML is re-combined. So please ensure you have a
 ```
@@ -29,18 +30,25 @@ These stylesheets should not output the XML declaration as the resulting XML is 
 
 in each of your XSLTs.
 
-The other configuration options are:
+Besides the `xslt.path` option the other options are:
 
-* fedora3.indexer.fedoraUrl - The URL of your Fedora instance (default: localhost:8080/)
-* fedora3.indexer.fedoraPath - The base path at the above URL for fedora (default: /fedora)
-* fedora3.indexer.fedoraUser User with API-M privileges to Fedora (default: fedoraAdmin)
-* fedora3.indexer.fedoraPass - Password for above user (default: fedoraAdmin)
-* fedora3.indexer.solrUrl - The URL of your Solr instance (default: localhost:8080/solr)
-* fedora3.indexer.jmsBroker - The JMS Broker (default: tcp://localhost:61616)
-* fedora3.indexer.jmsQueue - The JMS queue to watch (default: queue:fedora.apim.update)
-* fedora3.indexer.concurrent - Number of concurrent processes to run on Solr insert and delete routes (default: 5)
+* jms.brokerUrl
+* jms.username
+* jms.password
+* queue.incoming
+* queue.internal
+* queue.dead-letter
+* concurrent.processes
+* fcrepo.baseUri
+* fcrepo.basePath
+* fcrepo.authUser
+* fcrepo.authPassword
+* error.maxRedeliveries
+* solr.baseUrl
+* completion.timeout
+* reindexer.port=9999
 
-These can also be overridden by including -D&lt;parameter&gt;=&lt;value&gt; in your JAVA\_OPTS system variable.
+All configuration options are documented inside the configuration file.
 
 ## How it works
 This indexer watches the active-mq queue for Fedora update messages. When one arrives:
@@ -58,4 +66,4 @@ The datastream ID is available in the XSLT as a parameter called *DSID*, you can
 The resulting field XML is concatenated together using the *ca.umanitoba.dam.islandora.fc3indexer.StringConcatAggregator* wrapped with a &lt;update&gt;&lt;doc&gt; &lt;/doc&gt;&lt;update&gt; and pushed to Solr as an update.
 
 ## Credit
-All credit to [acoburn](https://github.com/acoburn) for this is just an implementation of his camel route wrapped in a war deployment.
+All credit to [acoburn](https://github.com/acoburn) for this is just an implementation of his camel route.
