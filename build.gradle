@@ -57,7 +57,7 @@ dependencies {
 	compile group: 'commons-io', name: 'commons-io', version: versions.apacheCommons
 
 	runtime group: 'xalan', name: 'xalan', version: versions.xalan
-	testRuntime group: 'xalan', name: 'xalan', version: versions.xalan
+	testCompile group: 'xalan', name: 'xalan', version: versions.xalan
 
 	testCompile group: 'org.apache.camel', name: 'camel-test-blueprint', version: versions.camel
   	testCompile group: 'org.slf4j', name: 'slf4j-log4j12', version: versions.slf4j

@@ -20,10 +20,22 @@ import javax.xml.parsers.DocumentBuilder;
 import java.io.IOException;
 import java.io.StringReader;
 
+/**
+ * Utility function for handling text datastreams.
+ * 
+ * @author whikloj
+ */
 public class StringToXmlProcessor implements Processor {
 
     private static Logger LOGGER = LoggerFactory.getLogger(StringToXmlProcessor.class);
 
+    /**
+     * Wrap the contents in an element named with the datastream ID and encode any necessary characters.
+     * 
+     * @param dsid The datastream ID we are acting on.
+     * @param inputString The contents of that datastream, should be plain text.
+     * @return The new XML Document.
+     */
     public static Document convertToXML(final String dsid, final String inputString) {
         LOGGER.debug("DSID is {} and body is {}", dsid, Math.min(inputString.length(), 100));
         final String xmlVersion = escapeXml10(inputString);

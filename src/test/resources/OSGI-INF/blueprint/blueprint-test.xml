@@ -12,7 +12,7 @@
       <cm:property name="xslt.path" value="xslts"/>
     
       <cm:property name="error.maxRedeliveries" value="3"/>
-      <cm:property name="queue.incoming" value="direct:start"/>
+      <cm:property name="queue.incoming" value="direct:input"/>
       <cm:property name="queue.internal" value="direct:internal"/>
 	  <cm:property name="queue.dead-letter" value="direct:deadend"/>
 

@@ -70,7 +70,7 @@
     <!-- <property name="connectionFactory" ref="jmsConnectionFactory"/>-->
   </bean>
   
-  <camelContext id="UmlFedora3SolrIndexer" xmlns="http://camel.apache.org/schema/blueprint">
+  <camelContext id="UmlFedora3SolrIndexer" xmlns="http://camel.apache.org/schema/blueprint" streamCache="true">
     <package>ca.umanitoba.dam.islandora.fc3indexer</package>
   </camelContext>
 </blueprint>
