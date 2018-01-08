@@ -7,7 +7,7 @@
        http://camel.apache.org/schema/blueprint http://camel.apache.org/schema/blueprint/camel-blueprint.xsd">
 
   <!-- OSGI blueprint property placeholder -->
-  <cm:property-placeholder id="properties" persistent-id="ca.umanitoba.dam.islandora.fc3indexer" update-strategy="reload" >
+  <cm:property-placeholder id="islandora-fc3indexer-properties" persistent-id="ca.umanitoba.dam.islandora.fc3indexer" update-strategy="reload" >
     <cm:default-properties>
       <cm:property name="xslt.path" value=""/>
       <cm:property name="error.maxRedeliveries" value="3"/>
@@ -35,42 +35,60 @@
       <cm:property name="completion.timeout" value="10000"/>
       
       <!-- Port to open the reindexing endpoint -->
-      <cm:property name="reindexer.port" value="9999"/>
+      <cm:property name="reindexer.port" value="9111"/>
       
     </cm:default-properties>
   </cm:property-placeholder>
 
-  <bean id="latestAggregation" class="org.apache.camel.processor.aggregate.UseLatestAggregationStrategy"/>
-
-  <bean id="stringConcatAggregation" class="ca.umanitoba.dam.islandora.fc3indexer.StringConcatAggregator"/>
-  
-  <bean id="xsltExistsPredicate" class="ca.umanitoba.dam.islandora.fc3indexer.XSLTChecker"/>
-  
   <bean id="xsltTransformer" class="org.apache.xalan.processor.TransformerFactoryImpl"/>
 
-  <bean id="jmsConnectionFactory" class="org.apache.activemq.ActiveMQConnectionFactory">
+  <bean id="indexerJmsConnectionFactory" class="org.apache.activemq.ActiveMQConnectionFactory">
     <property name="brokerURL" value="${jms.brokerUrl}"/>
     <property name="userName" value="${jms.username}"/>
     <property name="password" value="${jms.password}"/>
   </bean>
 
-  <bean id="pooledConnectionFactory"
+  <bean id="indexerPooledConnectionFactory"
      class="org.apache.activemq.pool.PooledConnectionFactory" init-method="start" destroy-method="stop">
     <property name="maxConnections" value="20" />
-    <property name="connectionFactory" ref="jmsConnectionFactory" />
+    <property name="connectionFactory" ref="indexerJmsConnectionFactory" />
   </bean>
 
-  <bean id="jmsConfig" class="org.apache.camel.component.jms.JmsConfiguration">
-    <property name="connectionFactory" ref="pooledConnectionFactory"/>
+  <bean id="indexerJmsConfig" class="org.apache.camel.component.jms.JmsConfiguration">
+    <property name="connectionFactory" ref="indexerPooledConnectionFactory"/>
     <property name="concurrentConsumers" value="${jms.processes}"/>
   </bean>
 
-  <bean id="activemq" class="org.apache.activemq.camel.component.ActiveMQComponent">
-    <property name="configuration" ref="jmsConfig"/>
+  <bean id="activemq-index" class="org.apache.activemq.camel.component.ActiveMQComponent">
+    <property name="configuration" ref="indexerJmsConfig"/>
     <!-- <property name="connectionFactory" ref="jmsConnectionFactory"/>-->
   </bean>
-  
+
+  <!-- to setup camel servlet with OSGi HttpService -->
+  <reference id="httpService" interface="org.osgi.service.http.HttpService"/>
+
+  <bean class="org.apache.camel.component.servlet.osgi.OsgiServletRegisterer"
+        init-method="register"
+        destroy-method="unregister">
+    <property name="alias" value="/fedora3-solr-indexer"/>
+    <property name="httpService" ref="httpService"/>
+    <property name="servlet" ref="camelServlet"/>
+  </bean>
+
+  <bean id="camelServlet" class="org.apache.camel.component.servlet.CamelHttpTransportServlet"/>
+
   <camelContext id="UmlFedora3SolrIndexer" xmlns="http://camel.apache.org/schema/blueprint" streamCache="true">
     <package>ca.umanitoba.dam.islandora.fc3indexer</package>
+    <restConfiguration component="servlet" bindingMode="json" contextPath="/fedora3-solr-indexer"
+                       port="${reindexer.port}">
+      <dataFormatProperty key="prettyPrint" value="true"/>
+    </restConfiguration>
+    <rest path="/reindex">
+      <get uri="/{id}">
+        <description>Force reindex</description>
+        <to uri="direct:restToReindex"/>
+	  </get>
+	</rest>
+    
   </camelContext>
 </blueprint>

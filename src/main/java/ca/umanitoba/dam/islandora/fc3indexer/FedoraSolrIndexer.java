@@ -15,42 +15,34 @@ import static org.apache.camel.builder.PredicateBuilder.not;
 import static org.slf4j.LoggerFactory.getLogger;
 
 import org.apache.camel.BeanInject;
-import org.apache.camel.Exchange;
-import org.apache.camel.Predicate;
 import org.apache.camel.Processor;
-//import org.apache.camel.Exchange;
-//import org.apache.camel.Processor;
 import org.apache.camel.PropertyInject;
-import org.apache.camel.TypeConverter;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.builder.xml.Namespaces;
 import org.apache.camel.processor.aggregate.AggregationStrategy;
 import org.apache.camel.processor.aggregate.UseLatestAggregationStrategy;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrInputDocument;
 import org.slf4j.Logger;
 import org.w3c.dom.Document;
 
 /**
  * Fedora 3 to Solr indexing routes.
- * 
+ *
  * @author whikloj
  */
 public class FedoraSolrIndexer extends RouteBuilder {
 
     private static final Logger LOGGER = getLogger(FedoraSolrIndexer.class);
 
-    @BeanInject(value = "stringConcatAggregation")
-    public AggregationStrategy stringConcatStrategy;
+    private AggregationStrategy stringConcatStrategy = new StringConcatAggregator();
 
-    @BeanInject(value = "latestAggregation")
-    public AggregationStrategy latestStrategy;
+    private AggregationStrategy latestStrategy = new UseLatestAggregationStrategy();
 
     @PropertyInject(value = "completion.timeout")
     public long completionTimeout;
 
-    @PropertyInject(value = "reindexer.port")
-    private int restPortNum;
+    //@PropertyInject(value = "reindexer.port")
+    //private int restPortNum;
 
     private Processor string2xml = new StringToXmlProcessor();
 
@@ -61,25 +53,20 @@ public class FedoraSolrIndexer extends RouteBuilder {
     @Override
     public void configure() throws Exception {
 
-        restConfiguration().component("spark-rest").host("127.0.0.1").port(restPortNum);
+        // restConfiguration().component("jetty").host("localhost").port(restPortNum);
 
         /**
          * A REST endpoint on localhost to force a re-index.
          * Called from: REST request to http://localhost:<reindexer.port>/reindex/<PID>
-         * Calls:       rest-to-reindex
-         */
-        rest("/reindex")
-            .id("Fc3SolrRestEndpoint")
-            .description("Rest endpoint to reindex a specific PID")
-            .get("/{pid}")
-            .to("direct:to_reindex?exchangePattern=InOnly");
-
-        /**
-         * Handle a REST request to reindex.
-         * Called from: Fc3SolrRestEndpoint
          * Calls:       JMS queue - internal
          */
-        from("direct:to_reindex")
+        // rest("/reindex")
+        // .id("Fc3SolrRestEndpoint")
+        // .description("Rest endpoint to reindex a specific PID")
+        // .get("/{pid}")
+        // .to("direct:restToReindex");
+
+        from("direct:restToReindex")
             .routeId("rest-to-reindex")
             .description("Parse REST request and re-index directly, skipping JMS queue")
             .setProperty("pid", header("pid"))
@@ -123,7 +110,7 @@ public class FedoraSolrIndexer extends RouteBuilder {
         /**
          * Call out to Fedora to get the objectXML and return it.
          * Called from: fedora-routing
-         * Calls:   fedora-insert-multicaster
+         * Calls:       fedora-insert-multicaster
          */
         from("direct:fedora.getObjectXml")
             .routeId("fedora-get-object-xml")
@@ -164,7 +151,7 @@ public class FedoraSolrIndexer extends RouteBuilder {
                         .end()
                     .end()
                     .setBody(simple("<update><add><doc>${body}</doc></add></update>"))
-                    .to("seda:solr.update?exchangePattern=InOnly")
+            .to("seda:solr.update")
                 .endChoice()
                 .otherwise()
                     .to("direct:solr.delete")
@@ -193,7 +180,7 @@ public class FedoraSolrIndexer extends RouteBuilder {
         /**
          * Processes a single foxml:datastream element, if there is an appropriate xslt file.
          * Called from: fedora-insert-multicaster
-         * Calls:   xslt-exists
+         * Calls:       xslt-exists
          */
         from("direct:fedora.dsProcess")
             .routeId("fedora-ds-process")
@@ -215,11 +202,21 @@ public class FedoraSolrIndexer extends RouteBuilder {
          * The <DSID>.xslt exists so lets run the transform.
          * Called from: fedora-ds-process
          * Calls:   fedora-ds-isXML
-         *          fedora-ds-isText 
+         *          fedora-ds-isText
          */
         from("direct:process-xslt")
             .routeId("xslt-exists")
             .routeDescription("Processes the datastream content with the appropriate XSLT")
+            .onException(javax.xml.transform.TransformerException.class)
+                .handled(true)
+                .setBody(constant(""))
+                .log(ERROR, LOGGER, "Transform Exception in route xslt-exists for ${header[pid]}: ${exception.type} - ${exception}")
+            .end()
+            .onException(Exception.class)
+                .handled(true)
+                .setBody(constant(""))
+                .log(ERROR, LOGGER, "Generic Exception (${exception.type}) for ${header[pid]} : ${exception}")
+            .end()
             .choice()
                 .when(in(
                     header("mimetype").isEqualTo("text/xml"),
@@ -267,7 +264,7 @@ public class FedoraSolrIndexer extends RouteBuilder {
         /**
          * Getting an XML datastream content from Fedora.
          * Called from: xslt-exists
-         * Calls:   fedora-get-url
+         * Calls:       fedora-get-url
          */
         from("direct:dsXML")
             .routeId("fedora-ds-isXML")
@@ -283,7 +280,7 @@ public class FedoraSolrIndexer extends RouteBuilder {
         /**
          * Getting a text datastream content from Fedora.
          * Called from: xslt-exists
-         * Calls:   fedora-get-url
+         * Calls:       fedora-get-url
          */
         from("direct:dsText")
             .routeId("fedora-ds-isText")
@@ -315,12 +312,12 @@ public class FedoraSolrIndexer extends RouteBuilder {
          * Unused delete multicaster, just an end-to-end route.
          * Called from: fedora-routing
          *              fedora-insert-multicaster
-         * Calls: solr-deletion
+         * Calls:       solr-deletion
          */
         from("direct:fedora.delete")
             .routeId("fedora-delete-multicaster")
             .description("Fedora Message delete multicaster")
-            .to("seda:solr.delete?exchangePattern=InOnly");
+            .to("seda:solr.delete");
 
         /**
          * Deletes from Solr by ID.

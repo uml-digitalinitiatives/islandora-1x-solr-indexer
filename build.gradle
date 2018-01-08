@@ -17,7 +17,7 @@ targetCompatibility = 1.8
 
 ext {
 	vendor = "Digital Initiatives : University of Manitoba Libraries"
-    docURL = "https://github.com/uml-digitalinitiatives/fc3-camel-indexer"
+    docURL = "https://github.com/uml-digitalinitiatives/islandora-1x-solr-indexer"
     description = "Index Fedora 3 content into Solr"
     license = "MIT"
     buildName = "islandora-1x-solr-indexer"
@@ -28,6 +28,7 @@ ext {
     	activemqRange : '[5.15, 6)',
     	slf4j : '1.7.7',
     	joda : '2.6',
+    	jodaOsgi: '2.3_1',
     	apacheCommons : '2.4',
     	commonsCodec : '1.10',
     	commonsLang : '3.4',
@@ -36,14 +37,15 @@ ext {
     	httpcore : '4.4.3',
     	httpcoreRange : '[4.4, 5)',
     	xalan: '2.7.2',
-    	xalanOsgi : '2.7.2_1',
+    	xalanOsgi : '2.7.2_3',
     	xalanRange : '[2.7, 3)',
     	bcelOsgi : '5.2_4',
     	bcelRange : '[5.2, 6)',
 		mockito : '1.10.19',
-    	asmCommons : '5.0.3'
+    	asmCommons : '5.0.3',
+    	osgi: '1.2.1'
     ]
-    defaultOsgiImports = 'org.osgi.service.blueprint;version="[1,2)",*'
+    defaultOsgiImports = 'org.osgi.service.blueprint;version="[1,2)"'
 }
 
 dependencies {
@@ -51,19 +53,23 @@ dependencies {
 	compile group: 'org.apache.camel', name: 'camel-blueprint', version: versions.camel
 	compile group: 'org.apache.camel', name: 'camel-http4', version: versions.camel
 	compile group: 'org.apache.camel', name: 'camel-solr', version: versions.camel
-	compile group: 'org.apache.camel', name: 'camel-spark-rest', version: versions.camel
+	compile group: 'org.apache.camel', name: 'camel-jetty', version: versions.camel
 	compile group: 'org.apache.commons', name: 'commons-lang3', version: versions.commonsLang
 	compile group: 'org.slf4j', name: 'slf4j-api', version: versions.slf4j
 	compile group: 'commons-io', name: 'commons-io', version: versions.apacheCommons
 
 	runtime group: 'xalan', name: 'xalan', version: versions.xalan
-	testCompile group: 'xalan', name: 'xalan', version: versions.xalan
+	//runtime group: 'joda-time', name: 'joda-time', version: versions.joda
+	runtime group: 'org.apache.servicemix.bundles', name: 'org.apache.servicemix.bundles.joda-time', version: versions.jodaOsgi
+	
 
+	testCompile group: 'xalan', name: 'xalan', version: versions.xalan
 	testCompile group: 'org.apache.camel', name: 'camel-test-blueprint', version: versions.camel
   	testCompile group: 'org.slf4j', name: 'slf4j-log4j12', version: versions.slf4j
 	testCompile group: 'org.mockito', name: 'mockito-all', version: versions.mockito
 	testCompile group: 'org.ow2.asm', name: 'asm-commons', version: versions.asmCommons
-	
+
+	testRuntime group: 'org.apache.servicemix.bundles', name: 'org.apache.servicemix.bundles.joda-time', version: versions.jodaOsgi
 }
 
 // Copy configuration files over to output
@@ -137,12 +143,14 @@ jar {
       			"org.apache.activemq.camel.component;version=\"${versions.activemqRange}\"," +
       			"org.apache.commons.io," +
       			"org.apache.commons.lang3," +
+      			"org.joda.time.format," +
       			"org.apache.camel.component.http4," +
       			"org.apache.camel.http.common," +
-      			"org.apache.camel.component.sparkrest," +
+      			"org.apache.camel.component.jetty," +
       			"org.apache.camel.component.jms," +
       			"org.apache.camel.component.solr," +
       			"org.apache.camel.component.xslt," +
+      			"org.apache.camel.processor," +
       			"org.apache.camel;version=\"${versions.camelRange}\"," +
 				"org.apache.bcel;version=\"${versions.bcelRange}\"," +
       			"org.apache.xalan.processor;version=\"${versions.xalanRange}\"," +

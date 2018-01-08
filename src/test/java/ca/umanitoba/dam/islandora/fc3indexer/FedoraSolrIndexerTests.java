@@ -118,4 +118,29 @@ public class FedoraSolrIndexerTests extends CamelBlueprintTestSupport {
         assertMockEndpointsSatisfied();
         context.stop();
     }
+
+
+    public void testRestConsumer() throws Exception {
+        final String route = "rest-to-reindex";
+
+        context.getRouteDefinition(route).adviceWith(context,
+            new AdviceWithRouteBuilder() {
+
+                @Override
+                public void configure() throws Exception {
+                    mockEndpointsAndSkip("direct:internal");
+                }
+            });
+
+        context.start();
+
+        getMockEndpoint("mock:direct:internal").expectedMessageCount(3);
+
+        template.requestBody("http4://localhost:9111/reindex/testPID", null, String.class);
+        template.requestBody("http4://localhost:9111/reindex/testPID2", null, String.class);
+        template.requestBody("http4://localhost:9111/reindex/testPID3", null, String.class);
+
+        assertMockEndpointsSatisfied();
+        context.stop();
+    }
 }
