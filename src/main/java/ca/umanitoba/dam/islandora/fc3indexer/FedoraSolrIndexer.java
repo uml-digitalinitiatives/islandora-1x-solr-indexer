@@ -60,11 +60,11 @@ public class FedoraSolrIndexer extends RouteBuilder {
          * Called from: REST request to http://localhost:<reindexer.port>/reindex/<PID>
          * Calls:       JMS queue - internal
          */
-        // rest("/reindex")
-        // .id("Fc3SolrRestEndpoint")
-        // .description("Rest endpoint to reindex a specific PID")
-        // .get("/{pid}")
-        // .to("direct:restToReindex");
+        rest("/reindex")
+         .id("Fc3SolrRestEndpoint")
+         .description("Rest endpoint to reindex a specific PID")
+         .get("/{pid}")
+         .to("direct:restToReindex");
 
         from("direct:restToReindex")
             .routeId("rest-to-reindex")
