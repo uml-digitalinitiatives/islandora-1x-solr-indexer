@@ -64,31 +64,11 @@
     <!-- <property name="connectionFactory" ref="jmsConnectionFactory"/>-->
   </bean>
 
-  <!-- to setup camel servlet with OSGi HttpService -->
-  <reference id="httpService" interface="org.osgi.service.http.HttpService"/>
-
-  <bean class="org.apache.camel.component.servlet.osgi.OsgiServletRegisterer"
-        init-method="register"
-        destroy-method="unregister">
-    <property name="alias" value="/fedora3-solr-indexer"/>
-    <property name="httpService" ref="httpService"/>
-    <property name="servlet" ref="camelServlet"/>
-  </bean>
-
-  <bean id="camelServlet" class="org.apache.camel.component.servlet.CamelHttpTransportServlet"/>
-
   <camelContext id="UmlFedora3SolrIndexer" xmlns="http://camel.apache.org/schema/blueprint" streamCache="true">
     <package>ca.umanitoba.dam.islandora.fc3indexer</package>
-    <restConfiguration component="servlet" bindingMode="json" contextPath="/fedora3-solr-indexer"
+    <restConfiguration component="jetty" bindingMode="json" host="${reindexer.host}" contextPath="${reindexer.path}"
                        port="${reindexer.port}">
       <dataFormatProperty key="prettyPrint" value="true"/>
-    </restConfiguration>
-    <rest path="/reindex">
-      <get uri="/{id}">
-        <description>Force reindex</description>
-        <to uri="direct:restToReindex"/>
-	  </get>
-	</rest>
-    
+    </restConfiguration>    
   </camelContext>
 </blueprint>
