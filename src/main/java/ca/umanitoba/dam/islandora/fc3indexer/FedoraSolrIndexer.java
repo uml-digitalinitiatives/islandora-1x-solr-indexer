@@ -116,14 +116,14 @@ public class FedoraSolrIndexer extends RouteBuilder {
             .routeId("fedora-get-object-xml")
             .description("Attempt to retrieve the object XML for the resource")
             .setHeader(HTTP_METHOD, constant("GET"))
-            .setHeader(HTTP_URI, simple("{{fcrepo.baseUrl}}{{fcrepo.basePath}}/objects/${property[pid]}/objectXML"))
+            .setHeader(HTTP_URI, simple("{{fcrepo.baseUrl}}{{fcrepo.basePath}}/objects/$simple{property[pid]}/objectXML"))
             .log(DEBUG, LOGGER, "Getting foxml ${property[pid]}")
             .to("http4://localhost?authUsername={{fcrepo.authUser}}&authPassword={{fcrepo.authPassword}}")
             .choice()
                 .when(header(HTTP_RESPONSE_CODE).isEqualTo(200))
                     .to("direct:fedora.insert")
                 .otherwise()
-                    .log(ERROR, LOGGER, "Unable to get {{fcrepo.baseUrl}}{{fcrepo.basePath}}/objects/${property[pid]}/objectXML")
+                    .log(ERROR, LOGGER, "Unable to get {{fcrepo.baseUrl}}{{fcrepo.basePath}}/objects/$simple{property[pid]}/objectXML")
             .end();
 
         /**
@@ -224,13 +224,13 @@ public class FedoraSolrIndexer extends RouteBuilder {
                     header("mimetype").isEqualTo("application/rdf+xml"),
                     header("mimetype").isEqualTo("text/html")))
                     .to("direct:dsXML")
-                    .log(DEBUG, LOGGER, "Trying {{xslt.path}}/${header[DSID]}.xslt")
-                    .recipientList(simple("xslt:{{xslt.path}}/${header[DSID]}.xslt?transformerFactory=#xsltTransformer"))
+                    .log(DEBUG, LOGGER, "Trying {{xslt.path}}/$simple{header[DSID]}.xslt")
+                    .recipientList(simple("xslt:{{xslt.path}}/$simple{header[DSID]}.xslt?transformerFactory=#xsltTransformer"))
                     .endChoice()
                 .when(header("mimetype").isEqualTo("text/plain"))
                     .to("direct:dsText")
-                    .log(DEBUG, LOGGER, "Trying {{xslt.path}}/${header[DSID]}.xslt")
-                    .recipientList(simple("xslt:{{xslt.path}}/${header[DSID]}.xslt?transformerFactory=#xsltTransformer"))
+                    .log(DEBUG, LOGGER, "Trying {{xslt.path}}/$simple{header[DSID]}.xslt")
+                    .recipientList(simple("xslt:{{xslt.path}}/$simple{header[DSID]}.xslt?transformerFactory=#xsltTransformer"))
                     .endChoice()
                 .otherwise()
                     .setBody(constant(""))
@@ -272,7 +272,7 @@ public class FedoraSolrIndexer extends RouteBuilder {
             .removeHeaders("CamelHttp*")
             .setHeader(HTTP_METHOD, constant("GET"))
             .setHeader(HTTP_URI, simple(
-                "{{fcrepo.baseUrl}}{{fcrepo.basePath}}/objects/${header[pid]}/datastreams/${header[DSID]}/content"))
+                "{{fcrepo.baseUrl}}{{fcrepo.basePath}}/objects/$simple{header[pid]}/datastreams/$simple{header[DSID]}/content"))
             .log(DEBUG, LOGGER, "Getting XML datastream ${header[DSID]} for ${header[pid]}")
             .to("direct:get-url")
             .filter(body().isNotNull()).setBody(body().convertTo(Document.class));
@@ -288,7 +288,7 @@ public class FedoraSolrIndexer extends RouteBuilder {
             .removeHeaders("CamelHttp*")
             .setHeader(HTTP_METHOD, constant("GET"))
             .setHeader(HTTP_URI, simple(
-                "{{fcrepo.baseUrl}}{{fcrepo.basePath}}/objects/${header[pid]}/datastreams/${header[DSID]}/content"))
+                "{{fcrepo.baseUrl}}{{fcrepo.basePath}}/objects/$simple{header[pid]}/datastreams/$simple{header[DSID]}/content"))
             .log(DEBUG, LOGGER, "Getting Text datastream ${header[DSID]} for ${header[pid]}")
             .to("direct:get-url")
             .filter(body().isNotNull()).process(string2xml);
