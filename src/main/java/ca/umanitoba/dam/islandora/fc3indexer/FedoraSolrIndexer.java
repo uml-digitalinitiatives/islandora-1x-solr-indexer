@@ -17,6 +17,7 @@ import static org.slf4j.LoggerFactory.getLogger;
 import org.apache.camel.BeanInject;
 import org.apache.camel.Processor;
 import org.apache.camel.PropertyInject;
+import org.apache.camel.RoutesBuilder;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.builder.xml.Namespaces;
 import org.apache.camel.processor.aggregate.AggregationStrategy;
@@ -30,7 +31,7 @@ import org.w3c.dom.Document;
  *
  * @author whikloj
  */
-public class FedoraSolrIndexer extends RouteBuilder {
+public class FedoraSolrIndexer extends RouteBuilder implements RoutesBuilder {
 
     private static final Logger LOGGER = getLogger(FedoraSolrIndexer.class);
 
@@ -41,8 +42,11 @@ public class FedoraSolrIndexer extends RouteBuilder {
     @PropertyInject(value = "completion.timeout")
     public long completionTimeout;
 
-    //@PropertyInject(value = "reindexer.port")
-    //private int restPortNum;
+    @PropertyInject(value = "reindexer.port")
+    private int restPortNum;
+    
+    @PropertyInject(value = "reindexer.path")
+    private String restPath;
 
     private Processor string2xml = new StringToXmlProcessor();
 
@@ -53,18 +57,19 @@ public class FedoraSolrIndexer extends RouteBuilder {
     @Override
     public void configure() throws Exception {
 
-        // restConfiguration().component("jetty").host("localhost").port(restPortNum);
+    		final String fullPath = (!restPath.startsWith("/") ? "/" : "" + restPath);
+        //restConfiguration().component("jetty").host("localhost").contextPath(restPath).port(restPortNum);
 
         /**
          * A REST endpoint on localhost to force a re-index.
          * Called from: REST request to http://localhost:<reindexer.port>/reindex/<PID>
          * Calls:       JMS queue - internal
          */
-        rest("/reindex")
-         .id("Fc3SolrRestEndpoint")
-         .description("Rest endpoint to reindex a specific PID")
-         .get("/{pid}")
-         .to("direct:restToReindex");
+        //rest("/reindex")
+        // .id("Fc3SolrRestEndpoint")
+        // .description("Rest endpoint to reindex a specific PID")
+        // .get("/{pid}")
+        // .to("direct:restToReindex");
 
         from("direct:restToReindex")
             .routeId("rest-to-reindex")

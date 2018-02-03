@@ -22,30 +22,30 @@ ext {
     license = "MIT"
     buildName = "islandora-1x-solr-indexer"
     versions = [
-    	camel : '2.18.2',
-    	camelRange : '[2.18, 3)',
-    	activemq : '5.15.0',
-    	activemqRange : '[5.15, 6)',
-    	slf4j : '1.7.7',
-    	joda : '2.6',
-    	jodaOsgi: '2.3_1',
-    	apacheCommons : '2.4',
-    	commonsCodec : '1.10',
-    	commonsLang : '3.4',
-    	httpclient : '4.5.2',
-    	httpclientRange : '[4.5, 5)',
-    	httpcore : '4.4.3',
-    	httpcoreRange : '[4.4, 5)',
-    	xalan: '2.7.2',
-    	xalanOsgi : '2.7.2_3',
-    	xalanRange : '[2.7, 3)',
-    	bcelOsgi : '5.2_4',
-    	bcelRange : '[5.2, 6)',
-		mockito : '1.10.19',
-    	asmCommons : '5.0.3',
-    	osgi: '1.2.1'
+    		activemq : '5.15.0',
+	    	activemqRange : '[5.15, 6)',
+	    	apacheCommons : '2.4',
+	    	asmCommons : '5.0.3',
+	    	bcelOsgi : '5.2_4',
+	    	bcelRange : '[5.2, 6)',
+	    	camel : '2.18.2',
+	    	camelRange : '[2.18, 3)',
+	    	commonsCodec : '1.10',
+	    	commonsLang : '3.4',
+	    	httpclient : '4.5.2',
+	    	httpclientRange : '[4.5, 5)',
+	    	httpcore : '4.4.3',
+	    	httpcoreRange : '[4.4, 5)',
+	    	joda : '2.6',
+	    	jodaOsgi: '2.3_1',
+	    	mockito : '1.10.19',
+	    	osgi: '1.2.1',
+	    	slf4j : '1.7.7',
+	    	xalan: '2.7.2',
+	    	xalanOsgi : '2.7.2_3',
+	    	xalanRange : '[2.7, 3)'
     ]
-    defaultOsgiImports = 'org.osgi.service.blueprint;version="[1,2)"'
+    defaultOsgiImports = 'org.osgi.service.blueprint;version="[1,2)",*'
 }
 
 dependencies {
@@ -58,8 +58,9 @@ dependencies {
 	compile group: 'org.slf4j', name: 'slf4j-api', version: versions.slf4j
 	compile group: 'commons-io', name: 'commons-io', version: versions.apacheCommons
 
-	runtime group: 'xalan', name: 'xalan', version: versions.xalan
+	//runtime group: 'xalan', name: 'xalan', version: versions.xalan
 	//runtime group: 'joda-time', name: 'joda-time', version: versions.joda
+	runtime group: 'org.apache.servicemix.bundles', name: 'org.apache.servicemix.bundles.xalan', version: versions.xalanOsgi
 	runtime group: 'org.apache.servicemix.bundles', name: 'org.apache.servicemix.bundles.joda-time', version: versions.jodaOsgi
 	
 
@@ -138,23 +139,17 @@ jar {
       docURL project.docURL
       license project.license
 
-      instruction 'Import-Package', "org.apache.activemq," +
-                "org.apache.activemq.pool," +
-      			"org.apache.activemq.camel.component;version=\"${versions.activemqRange}\"," +
-      			"org.apache.commons.io," +
-      			"org.apache.commons.lang3," +
-      			"org.joda.time.format," +
-      			"org.apache.camel.component.http4," +
-      			"org.apache.camel.http.common," +
-      			"org.apache.camel.component.jetty," +
-      			"org.apache.camel.component.jms," +
-      			"org.apache.camel.component.solr," +
-      			"org.apache.camel.component.xslt," +
-      			"org.apache.camel.processor," +
-      			"org.apache.camel;version=\"${versions.camelRange}\"," +
-				"org.apache.bcel;version=\"${versions.bcelRange}\"," +
-      			"org.apache.xalan.processor;version=\"${versions.xalanRange}\"," +
-                defaultOsgiImports
+      instruction 'Import-Package', "org.apache.camel," +
+                 "org.apache.camel.component.jms," +
+                 "org.apache.camel.component.jetty," +
+                 "org.apache.camel.component.solr," +
+                 "org.apache.camel.component.http4;version=\"${versions.camelRange}\"," +
+                 "org.joda.time.format," +
+                 "org.apache.xalan.processor;version=\"${versions.xalanRange}\"," +
+                 "org.apache.activemq.camel.component;version=\"${versions.activemqRange}\"," +
+                 "org.apache.activemq.pool;version=\"${versions.activemqRange}\"," +
+                 "org.apache.activemq;version=\"${versions.activemqRange}\"," +
+                 "${defaultOsgiImports}"
       instruction 'Export-Package', 'ca.umanitoba.dam.islandora.fc3indexer'
       instruction 'Bundle-Classpath', '.,' +
       			"lib/gsearchlibs-2.7.jar," +

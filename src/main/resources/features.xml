@@ -7,6 +7,7 @@
  <feature name="islandora-1x-solr-indexer" version="${project.version}" start-level="80">
     <details>Consume Fedora 3 JMS messages and index the objects into Solr</details>
 
+    <feature version="${versions.camelRange}">camel</feature>
     <feature version="${versions.camelRange}">camel-blueprint</feature>
     <feature version="${versions.camelRange}">camel-jms</feature>
     <feature version="${versions.camelRange}">camel-http4</feature>

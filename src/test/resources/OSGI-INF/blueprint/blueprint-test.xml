@@ -32,6 +32,7 @@
       
       <!-- Port to open the reindexing endpoint -->
       <cm:property name="reindexer.port" value="9111"/>
+      <cm:property name="reindexer.path" value="/fedora3-solr-indexer"/>
       
     </cm:default-properties>
   </cm:property-placeholder>
