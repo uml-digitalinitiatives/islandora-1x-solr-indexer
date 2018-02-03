@@ -5,6 +5,7 @@ import static org.apache.camel.component.solr.SolrConstants.OPERATION_INSERT;
 import static org.apache.camel.Exchange.HTTP_METHOD;
 import static org.apache.camel.Exchange.HTTP_RESPONSE_CODE;
 import static org.apache.camel.Exchange.HTTP_URI;
+import static org.apache.camel.ExchangePattern.InOnly;
 import static org.apache.camel.LoggingLevel.DEBUG;
 import static org.apache.camel.LoggingLevel.ERROR;
 import static org.apache.camel.LoggingLevel.INFO;
@@ -57,29 +58,32 @@ public class FedoraSolrIndexer extends RouteBuilder implements RoutesBuilder {
     @Override
     public void configure() throws Exception {
 
-    		final String fullPath = (!restPath.startsWith("/") ? "/" : "" + restPath);
-        //restConfiguration().component("jetty").host("localhost").contextPath(restPath).port(restPortNum);
+    		final String fullPath = (!restPath.startsWith("/") ? "/" : "") + restPath + "/";
+        restConfiguration().component("jetty").host("localhost").port(restPortNum);
 
         /**
          * A REST endpoint on localhost to force a re-index.
          * Called from: REST request to http://localhost:<reindexer.port>/reindex/<PID>
          * Calls:       JMS queue - internal
          */
-        //rest("/reindex")
-        // .id("Fc3SolrRestEndpoint")
-        // .description("Rest endpoint to reindex a specific PID")
-        // .get("/{pid}")
-        // .to("direct:restToReindex");
+        rest(fullPath + "reindex")
+         .id("Fc3SolrRestEndpoint")
+         .description("Rest endpoint to reindex a specific PID")
+         .get("/{pid}")
+         .to("direct:restToReindex");
 
         from("direct:restToReindex")
             .routeId("rest-to-reindex")
             .description("Parse REST request and re-index directly, skipping JMS queue")
+            .setExchangePattern(InOnly)
             .setProperty("pid", header("pid"))
             .removeHeaders("*")
             .setHeader("pid", exchangeProperty("pid"))
             .setHeader("methodName", constant("indexObject"))
             .to("{{queue.internal}}")
-            .log(INFO, LOGGER, "Added ${property[pid]} to direct reindex");
+            .log(INFO, LOGGER, "Added ${property[pid]} to direct reindex")
+            .setBody(constant(""))
+            .removeHeaders("*");
 
         /**
          * Sits on the Fedora event queue and aggregates incoming messages to avoid over processing.
