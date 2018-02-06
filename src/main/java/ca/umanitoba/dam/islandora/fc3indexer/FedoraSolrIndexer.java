@@ -250,7 +250,7 @@ public class FedoraSolrIndexer extends RouteBuilder implements RoutesBuilder {
          * Push the string (in SolrInputDocument format) to Solr
          * Called from: fedora-insert-multicaster
          */
-        from("seda:solr.update?blockWhenFull=true&concurrentConsumers={{concurrent.processes}}")
+        from("seda:solr.update?blockWhenFull=true&concurrentConsumers={{solr.processes}}")
             .routeId("solr-insertion")
             .description("Solr Insertion")
             .onException(SolrException.class)
@@ -332,7 +332,7 @@ public class FedoraSolrIndexer extends RouteBuilder implements RoutesBuilder {
          * Deletes from Solr by ID.
          * Called from: fedora-delete-multicaster
          */
-        from("seda:solr.delete?blockWhenFull=true&concurrentConsumers={{concurrent.processes}}")
+        from("seda:solr.delete?blockWhenFull=true&concurrentConsumers={{solr.processes}}")
             .routeId("solr-deletion")
             .description("Solr Deletion")
             .onException(SolrException.class)

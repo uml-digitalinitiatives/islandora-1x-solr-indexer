@@ -22,7 +22,7 @@
       <cm:property name="queue.internal" value="activemq:queue:internalIndex"/>
       <cm:property name="queue.dead-letter" value="activemq:topic:trash"/>
       
-      <cm:property name="concurrent.processes" value="1"/>
+      <cm:property name="solr.processes" value="1"/>
       
       <cm:property name="fcrepo.baseUrl" value="http://localhost:8080"/>
       <cm:property name="fcrepo.basePath" value="/fedora"/>
@@ -61,7 +61,7 @@
     <property name="concurrentConsumers" value="${jms.processes}"/>
   </bean>
 
-  <bean id="activemq-index" class="org.apache.activemq.camel.component.ActiveMQComponent">
+  <bean id="activemq" class="org.apache.activemq.camel.component.ActiveMQComponent">
     <property name="configuration" ref="indexerJmsConfig"/>
     <!-- <property name="connectionFactory" ref="jmsConnectionFactory"/>-->
   </bean>
