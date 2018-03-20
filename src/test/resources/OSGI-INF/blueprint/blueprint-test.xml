@@ -16,8 +16,6 @@
       <cm:property name="queue.internal" value="direct:internal"/>
 	  <cm:property name="queue.dead-letter" value="direct:deadend"/>
 
-      <cm:property name="concurrent.processes" value="1"/>
-      
       <cm:property name="fcrepo.baseUrl" value="http://localhost:8080"/>
       <cm:property name="fcrepo.basePath" value="/fedora"/>
       <cm:property name="fcrepo.authUser" value="fedoraAdmin"/>
@@ -26,6 +24,7 @@
       
       <!-- The below uses the solr component @see http://camel.apache.org/solr.html -->
       <cm:property name="solr.baseUrl" value="solr://localhost:8080/solr"/>
+      <cm:property name="solr.processes" value="1"/>
       
       <!--  How long to wait before closing an aggregation of events in milliseconds. -->
       <cm:property name="completion.timeout" value="1000"/>
