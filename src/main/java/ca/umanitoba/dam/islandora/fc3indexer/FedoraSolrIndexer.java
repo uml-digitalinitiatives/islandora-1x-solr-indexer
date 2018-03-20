@@ -228,15 +228,15 @@ public class FedoraSolrIndexer extends RouteBuilder implements RoutesBuilder {
             .end()
             .choice()
                 .when(in(
-                    header("mimetype").isEqualTo("text/xml"),
-                    header("mimetype").isEqualTo("application/xml"),
-                    header("mimetype").isEqualTo("application/rdf+xml"),
-                    header("mimetype").isEqualTo("text/html")))
+                    header("mimetype").contains("text/xml"),
+                    header("mimetype").contains("application/xml"),
+                    header("mimetype").contains("application/rdf+xml"),
+                    header("mimetype").contains("text/html")))
                     .to("direct:dsXML")
                     .log(DEBUG, LOGGER, "Trying {{xslt.path}}/$simple{header[DSID]}.xslt")
                     .recipientList(simple("xslt:{{xslt.path}}/$simple{header[DSID]}.xslt?transformerFactory=#xsltTransformer"))
                     .endChoice()
-                .when(header("mimetype").isEqualTo("text/plain"))
+                .when(header("mimetype").contains("text/plain"))
                     .to("direct:dsText")
                     .log(DEBUG, LOGGER, "Trying {{xslt.path}}/$simple{header[DSID]}.xslt")
                     .recipientList(simple("xslt:{{xslt.path}}/$simple{header[DSID]}.xslt?transformerFactory=#xsltTransformer"))
