@@ -24,6 +24,8 @@ import org.slf4j.Logger;
 public class FedoraSolrIndexerTests extends CamelBlueprintTestSupport {
 
     private static Logger LOGGER = getLogger(FedoraSolrIndexerTests.class);
+    
+    private static String REST_ENDPOINT = "http4://localhost:9222/fedora3-solr-indexer";
 
     @Produce(uri = "direct:start")
     protected ProducerTemplate template;
@@ -136,9 +138,9 @@ public class FedoraSolrIndexerTests extends CamelBlueprintTestSupport {
 
         getMockEndpoint("mock:direct:internal").expectedMessageCount(3);
 
-        template.requestBody("http4://localhost:9111/fedora3-solr-indexer/reindex/testPID", null, String.class);
-        template.requestBody("http4://localhost:9111/fedora3-solr-indexer/reindex/testPID2", null, String.class);
-        template.requestBody("http4://localhost:9111/fedora3-solr-indexer/reindex/testPID3", null, String.class);
+        template.requestBody(REST_ENDPOINT + "/reindex/testPID", null, String.class);
+        template.requestBody(REST_ENDPOINT + "/reindex/testPID2", null, String.class);
+        template.requestBody(REST_ENDPOINT + "/reindex/testPID3", null, String.class);
 
         assertMockEndpointsSatisfied();
         context.stop();
