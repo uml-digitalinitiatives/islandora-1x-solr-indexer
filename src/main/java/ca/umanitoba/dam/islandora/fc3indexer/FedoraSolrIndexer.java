@@ -63,6 +63,8 @@ public class FedoraSolrIndexer extends RouteBuilder implements RoutesBuilder {
     private final String foxmlNS = "info:fedora/fedora-system:def/foxml#";
 
     private final Namespaces ns = new Namespaces("default", foxmlNS).add("foxml", foxmlNS);
+    
+    private final DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
 
     @Override
     public void configure() throws Exception {
@@ -291,8 +293,6 @@ public class FedoraSolrIndexer extends RouteBuilder implements RoutesBuilder {
                 .to("direct:get-url")
                 .filter(body().isNotNull())
                 .process(new Processor() {
-                    final DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-
                     @Override
                     public void process(final Exchange exchange) throws Exception {
                         final Message in = exchange.getIn();
