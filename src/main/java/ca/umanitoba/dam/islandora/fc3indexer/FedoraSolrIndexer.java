@@ -15,6 +15,7 @@ import static org.apache.camel.component.solr.SolrConstants.OPERATION_DELETE_BY_
 import static org.apache.camel.component.solr.SolrConstants.OPERATION_INSERT;
 import static org.slf4j.LoggerFactory.getLogger;
 
+import java.io.IOException;
 import java.io.StringReader;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -300,7 +301,7 @@ public class FedoraSolrIndexer extends RouteBuilder implements RoutesBuilder {
                             in.setBody(dom);
                         } catch (final TypeConversionException e) {
                             LOGGER.error(String.format("Unable to convert DSID (%s) on PID (%s)",
-                                    in.getHeader("DSID"),
+                                    in.getHeader("DSID", String.class),
                                     in.getHeader("pid")));
                             final DocumentBuilder builder = factory.newDocumentBuilder();
                             final Document newdom = builder.parse(new InputSource(new StringReader("<fake></fake>")));
@@ -331,7 +332,13 @@ public class FedoraSolrIndexer extends RouteBuilder implements RoutesBuilder {
         from("direct:get-url")
                 .routeId("fedora-get-url")
                 .description("Get the HTTP_URI and check we got it, then return the message")
-                .to("http4://localhost?authUsername={{fcrepo.authUser}}&authPassword={{fcrepo.authPassword}}")
+                .onException(IOException.class)
+                .maximumRedeliveries(2)
+                .retriesExhaustedLogLevel(WARN)
+                .handled(true)
+                .to("{{queue.dead-letter}}")
+                .end()
+                .to("http4://localhost?authUsername={{fcrepo.authUser}}&authPassword={{fcrepo.authPassword}}&setSocketTimeout=10000")
                 .choice()
                 .when(not(header(HTTP_RESPONSE_CODE).isEqualTo(200)))
                 .log(WARN, LOGGER, "Problem getting ${header[CamelHttpUri]} received ${header[CamelHttpResponseCode]}")
