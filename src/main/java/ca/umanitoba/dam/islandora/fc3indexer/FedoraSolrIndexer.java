@@ -285,6 +285,11 @@ public class FedoraSolrIndexer extends RouteBuilder implements RoutesBuilder {
         from("direct:dsXML")
                 .routeId("fedora-ds-isXML")
                 .description("The datastream has an XML/HTML mimetype")
+                .onException(TypeConversionException.class)
+                .log(WARN, "TypeConversionException: DSID ${header[DSID]} for ${header[pid]}")
+                .setBody(constant(""))
+                .handled(true)
+                .end()
                 .removeHeaders("CamelHttp*")
                 .setHeader(HTTP_METHOD, constant("GET"))
                 .setHeader(HTTP_URI, simple(
@@ -292,23 +297,7 @@ public class FedoraSolrIndexer extends RouteBuilder implements RoutesBuilder {
                 .log(DEBUG, LOGGER, "Getting XML datastream ${header[DSID]} for ${header[pid]}")
                 .to("direct:get-url")
                 .filter(body().isNotNull())
-                .process(new Processor() {
-                    @Override
-                    public void process(final Exchange exchange) throws Exception {
-                        final Message in = exchange.getIn();
-                        try {
-                            final Document dom = in.getBody(Document.class);
-                            in.setBody(dom);
-                        } catch (final TypeConversionException e) {
-                            LOGGER.error(String.format("Unable to convert DSID (%s) on PID (%s)",
-                                    in.getHeader("DSID", String.class),
-                                    in.getHeader("pid")));
-                            final DocumentBuilder builder = factory.newDocumentBuilder();
-                            final Document newdom = builder.parse(new InputSource(new StringReader("<fake></fake>")));
-                            in.setBody(newdom);
-                        }
-                    }
-                });
+                .setBody(body().convertTo(Document.class));
 
         /**
          * Getting a text datastream content from Fedora. Called from: xslt-exists
