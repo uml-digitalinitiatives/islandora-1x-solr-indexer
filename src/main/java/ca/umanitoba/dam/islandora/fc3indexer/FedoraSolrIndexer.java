@@ -290,7 +290,7 @@ public class FedoraSolrIndexer extends RouteBuilder implements RoutesBuilder {
                 .log(DEBUG, LOGGER, "Getting XML datastream ${header[DSID]} for ${header[pid]}")
                 .to("direct:get-url")
                 .filter(body().isNotNull())
-                .setBody(body().convertTo(Document.class));
+                .setBody(body());
 
         /**
          * Getting a text datastream content from Fedora. Called from: xslt-exists
