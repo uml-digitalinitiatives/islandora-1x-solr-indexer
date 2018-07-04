@@ -16,13 +16,8 @@ import static org.apache.camel.component.solr.SolrConstants.OPERATION_INSERT;
 import static org.slf4j.LoggerFactory.getLogger;
 
 import java.io.IOException;
-import java.io.StringReader;
-
-import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
-import org.apache.camel.Exchange;
-import org.apache.camel.Message;
 import org.apache.camel.Processor;
 import org.apache.camel.PropertyInject;
 import org.apache.camel.RoutesBuilder;
@@ -34,7 +29,6 @@ import org.apache.camel.processor.aggregate.UseLatestAggregationStrategy;
 import org.apache.solr.common.SolrException;
 import org.slf4j.Logger;
 import org.w3c.dom.Document;
-import org.xml.sax.InputSource;
 
 /**
  * Fedora 3 to Solr indexing routes.
@@ -64,8 +58,6 @@ public class FedoraSolrIndexer extends RouteBuilder implements RoutesBuilder {
 
     private final Namespaces ns = new Namespaces("default", foxmlNS).add("foxml", foxmlNS);
     
-    private final DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-
     @Override
     public void configure() throws Exception {
 
@@ -135,7 +127,7 @@ public class FedoraSolrIndexer extends RouteBuilder implements RoutesBuilder {
                 .setHeader(HTTP_URI,
                         simple("{{fcrepo.baseUrl}}{{fcrepo.basePath}}/objects/$simple{property[pid]}/objectXML"))
                 .log(DEBUG, LOGGER, "Getting foxml ${property[pid]}")
-                .to("http4://localhost?authUsername={{fcrepo.authUser}}&authPassword={{fcrepo.authPassword}}")
+                .to("http4://localhost?authUsername={{fcrepo.authUser}}&authPassword={{fcrepo.authPassword}}&throwExceptionOnFailure=false&authenticationPreemptive=true")
                 .choice()
                     .when(header(HTTP_RESPONSE_CODE).isEqualTo(200))
                         .to("direct:fedora.insert")
@@ -327,7 +319,7 @@ public class FedoraSolrIndexer extends RouteBuilder implements RoutesBuilder {
                 .handled(true)
                 .to("{{queue.dead-letter}}")
                 .end()
-                .to("http4://localhost?authUsername={{fcrepo.authUser}}&authPassword={{fcrepo.authPassword}}&setSocketTimeout=10000")
+                .to("http4://localhost?authUsername={{fcrepo.authUser}}&authPassword={{fcrepo.authPassword}}&setSocketTimeout=10000&authenticationPreemptive=true&throwExceptionOnFailure=false")
                 .choice()
                 .when(not(header(HTTP_RESPONSE_CODE).isEqualTo(200)))
                 .log(WARN, LOGGER, "Problem getting ${header[CamelHttpUri]} received ${header[CamelHttpResponseCode]}")
