@@ -13,6 +13,7 @@ import static org.apache.camel.builder.PredicateBuilder.in;
 import static org.apache.camel.builder.PredicateBuilder.not;
 import static org.apache.camel.component.solr.SolrConstants.OPERATION_DELETE_BY_ID;
 import static org.apache.camel.component.solr.SolrConstants.OPERATION_INSERT;
+import static org.apache.camel.component.solr.SolrConstants.OPERATION;
 import static org.slf4j.LoggerFactory.getLogger;
 
 import java.io.IOException;
@@ -155,7 +156,7 @@ public class FedoraSolrIndexer extends RouteBuilder implements RoutesBuilder {
                           .to("direct:fedora.properties")
                           .split(body().tokenizeXML("datastream", "digitalObject"), stringConcatStrategy)
                             .streaming()
-                // .setHeader("foxml", constant(foxmlNS))
+                            .parallelProcessing()
                             .to("direct:fedora.dsProcess")
                           .end()
                         .end()
@@ -265,7 +266,7 @@ public class FedoraSolrIndexer extends RouteBuilder implements RoutesBuilder {
                 .setBody(body().convertToString())
                 .log(TRACE, LOGGER, "Started solr-insertion")
                 .to("log:ca.umanitoba.dam.islandora.fc3indexer?level=TRACE")
-                .setHeader("SolrOperation", constant(OPERATION_INSERT))
+                .setHeader(OPERATION, constant(OPERATION_INSERT))
                 .to("{{solr.baseUrl}}")
                 .log(INFO, LOGGER, "Added/Updated ${header[pid]} to Solr")
                 .log(TRACE, LOGGER, "Completed solr-insertion");
@@ -349,7 +350,7 @@ public class FedoraSolrIndexer extends RouteBuilder implements RoutesBuilder {
                 .handled(true)
                 .log(ERROR, LOGGER, "Generic Exception (${exception.type}) for ${header[pid]} : ${exception}")
                 .end()
-                .setHeader("SolrOperation", constant(OPERATION_DELETE_BY_ID))
+                .setHeader(OPERATION, constant(OPERATION_DELETE_BY_ID))
                 .setBody(header("pid"))
                 .to("{{solr.baseUrl}}")
                 .log(INFO, LOGGER, "Removed ${header.pid} from Solr");
