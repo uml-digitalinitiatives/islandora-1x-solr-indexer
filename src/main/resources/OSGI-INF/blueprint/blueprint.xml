@@ -65,6 +65,15 @@
     <!-- <property name="connectionFactory" ref="jmsConnectionFactory"/>-->
   </bean>
 
+  <bean id="externalJmsConfig" class="org.apache.camel.component.jms.JmsConfiguration">
+    <property name="connectionFactory" ref="indexerPooledConnectionFactory"/>
+    <property name="concurrentConsumers" value="1"/>
+  </bean>
+
+  <bean id="ext-activemq" class="org.apache.activemq.camel.component.ActiveMQComponent">
+    <property name="configuration" ref="externalJmsConfig"/>
+  </bean>
+
   <!-- <bean id="FedoraIndexRoutes" class="ca.umanitoba.dam.islandora.fc3indexer.FedoraSolrIndexer"></bean> -->
   <camelContext id="UmlFedora3SolrIndexer" xmlns="http://camel.apache.org/schema/blueprint" streamCache="true">
     <package>ca.umanitoba.dam.islandora.fc3indexer</package> 
