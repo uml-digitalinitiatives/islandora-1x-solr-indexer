@@ -164,7 +164,7 @@ public class FedoraSolrIndexer extends RouteBuilder implements RoutesBuilder {
                         .to("seda:solr.update")
                     .endChoice()
                 .otherwise()
-                    .to("direct:solr.delete")
+                    .to("direct:fedora.delete")
                 .end()
                 .log(TRACE, LOGGER, "Completed fedora-insert-multicaster");
 
