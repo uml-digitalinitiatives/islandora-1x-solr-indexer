@@ -1,11 +1,23 @@
+import aQute.bnd.gradle.Bundle
+
 apply plugin: 'maven'
 apply plugin: 'jacoco'
 apply plugin: 'eclipse-wtp'
 apply plugin: 'java'
+apply plugin: 'biz.aQute.bnd.builder'
+
+buildscript {
+  repositories {
+    mavenCentral()
+  }
+  dependencies {
+    classpath 'biz.aQute.bnd:biz.aQute.bnd.gradle:4.2.0'
+  }
+}
 
 repositories {
-	mavenCentral()
-    mavenLocal()
+  mavenCentral()
+  mavenLocal()
 }
 
 // Java 8 only
@@ -122,9 +134,7 @@ dependencies {
 // Make our JAR file
 jar {
     manifest {
-      attributes(
-        'Bundle-ManifestVersion': 2,
-        'Bundle-SymbolicName': project.group + "." + project.buildName,
+      bnd(
         'Bundle-Version': project.version,
         'Bundle-Vendor': project.vendor,
         'Bundle-Description': project.description,
