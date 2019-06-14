@@ -17,8 +17,6 @@ import static org.apache.camel.component.solr.SolrConstants.OPERATION;
 import static org.slf4j.LoggerFactory.getLogger;
 
 import java.io.IOException;
-import javax.xml.parsers.DocumentBuilderFactory;
-
 import org.apache.camel.Processor;
 import org.apache.camel.PropertyInject;
 import org.apache.camel.RoutesBuilder;
@@ -29,7 +27,6 @@ import org.apache.camel.processor.aggregate.AggregationStrategy;
 import org.apache.camel.processor.aggregate.UseLatestAggregationStrategy;
 import org.apache.solr.common.SolrException;
 import org.slf4j.Logger;
-import org.w3c.dom.Document;
 
 /**
  * Fedora 3 to Solr indexing routes.

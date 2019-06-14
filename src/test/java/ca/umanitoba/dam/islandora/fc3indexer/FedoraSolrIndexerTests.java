@@ -1,23 +1,13 @@
 package ca.umanitoba.dam.islandora.fc3indexer;
 
 import static org.slf4j.LoggerFactory.getLogger;
-import static org.apache.camel.Exchange.HTTP_RESPONSE_CODE;
-
-import java.util.Dictionary;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
-import javax.naming.Context;
-
-import org.apache.camel.EndpointInject;
 import org.apache.camel.Produce;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.AdviceWithRouteBuilder;
 import org.apache.camel.test.blueprint.CamelBlueprintTestSupport;
-import org.apache.camel.util.jndi.JndiContext;
-import org.apache.camel.component.mock.MockEndpoint;
-import org.apache.camel.processor.aggregate.UseLatestAggregationStrategy;
 import org.junit.Test;
 import org.slf4j.Logger;
 

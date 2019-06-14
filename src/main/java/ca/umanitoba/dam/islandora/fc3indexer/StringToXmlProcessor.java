@@ -2,9 +2,7 @@ package ca.umanitoba.dam.islandora.fc3indexer;
 
 import static org.apache.commons.lang3.StringEscapeUtils.ESCAPE_XML10;
 
-import org.apache.camel.Body;
 import org.apache.camel.Exchange;
-import org.apache.camel.Header;
 import org.apache.camel.Message;
 import org.apache.camel.Processor;
 import org.apache.commons.lang3.text.translate.CharSequenceTranslator;
