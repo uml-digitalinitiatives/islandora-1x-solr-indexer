@@ -168,8 +168,8 @@ test {
 		// standard out or error is shown
 		// in Gradle output.
 		// showStandardStreams = true
-		events 'standard_out', 'standard_error'
-		exceptionFormat = 'full'
+		// events 'standard_out', 'standard_error'
+		// exceptionFormat = 'full'
 	}
 }
 
