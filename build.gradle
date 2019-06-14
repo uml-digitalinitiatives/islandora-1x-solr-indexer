@@ -2,7 +2,6 @@ apply plugin: 'maven'
 apply plugin: 'jacoco'
 apply plugin: 'eclipse-wtp'
 apply plugin: 'java'
-apply plugin: 'osgi'
 
 group = 'ca.umanitoba.dam.islandora.fc3indexer'
 
@@ -16,11 +15,6 @@ sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
 ext {
-	vendor = "Digital Initiatives : University of Manitoba Libraries"
-    docURL = "https://github.com/uml-digitalinitiatives/islandora-1x-solr-indexer"
-    description = "Index Fedora 3 content into Solr"
-    license = "MIT"
-    buildName = "islandora-1x-solr-indexer"
     versions = [
         activemq : '5.15.5',
         activemqRange : '[5.15.5, 6)',
@@ -130,12 +124,14 @@ dependencies {
 // Make our JAR file
 jar {
     manifest {
-      description project.description
-      vendor project.vendor
-      docURL project.docURL
-      license project.license
-
-      instruction 'Import-Package', "org.apache.camel," +
+      attributes(
+        'Bundle-Version': project.version,
+        'Bundle-Vendor': project.vendor,
+        'Bundle-Description': project.description,
+        'Bundle-docURL': project.docURL,
+        'Bundle-License': project.license,
+        'Bundle-Name': project.buildName,
+        'Import-Package': "org.apache.camel," +
                  "org.apache.camel.component.jms," +
                  "org.apache.camel.component.jetty," +
                  "org.apache.camel.component.solr," +
@@ -145,11 +141,12 @@ jar {
                  "org.apache.activemq.camel.component;version=\"${versions.activemqRange}\"," +
                  "org.apache.activemq.pool;version=\"${versions.activemqRange}\"," +
                  "org.apache.activemq;version=\"${versions.activemqRange}\"," +
-                 "${defaultOsgiImports}"
-      instruction 'Export-Package', 'ca.umanitoba.dam.islandora.fc3indexer'
-      instruction 'Bundle-Classpath', '.,' +
+                 "${defaultOsgiImports}",
+        'Export-Package': 'ca.umanitoba.dam.islandora.fc3indexer',
+        'Bundle-Classpath': '.,' +
       			"lib/gsearchlibs-2.7.jar," +
       			"lib/xalan-2.7.2.jar"
+       )
     }
 }
 
