@@ -59,16 +59,17 @@ public class StringToXmlProcessor implements Processor {
             return builder.parse(new InputSource(new StringReader(theElement)));
         } catch (final ParserConfigurationException e) {
             LOGGER.error("Parser Exception: {}", e.getMessage());
-        } catch (SAXException | IOException e) {
+        } catch (final SAXException | IOException e) {
             LOGGER.error("Exception: ({}) {}", e.getClass(), e.getMessage());
         }
         return null;
     }
 
     @Override
-    public void process(Exchange exchange) throws Exception {
-        Message inMsg = exchange.getIn();
-        Document xmlDoc = StringToXmlProcessor.convertToXML(inMsg.getHeader("DSID", String.class), inMsg.getBody(String.class));
+    public void process(final Exchange exchange) throws Exception {
+        final Message inMsg = exchange.getIn();
+        final Document xmlDoc = StringToXmlProcessor.convertToXML(inMsg.getHeader("DSID", String.class),
+                inMsg.getBody(String.class));
         inMsg.setBody(xmlDoc);
     }
 }

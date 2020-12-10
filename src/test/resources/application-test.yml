@@ -1,0 +1,25 @@
+xslt.path: classpath:xslts
+error.maxRedeliveries:
+
+jms.brokerUrl:
+jms.username:
+jms.password:
+jms.processes: 1
+
+queue.incoming: direct:incoming
+queue.internal: direct:internal
+queue.dead-letter: direct:dead_letter
+
+fcrepo.baseUrl:
+fcrepo.basePath:
+fcrepo.authUser:
+fcrepo.authPassword:
+
+# The below uses the solr component @see http://camel.apache.org/solr.html
+solr.baseUrl: direct:solrEndpoint
+solr.processes: 1
+completion.timeout: 10000
+
+# Port to open the reindexing endpoint
+reindexer.port: 9222
+reindexer.path: /fedora3-solr-indexer

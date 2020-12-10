@@ -1,18 +1,7 @@
-import aQute.bnd.gradle.Bundle
-
-apply plugin: 'maven'
-apply plugin: 'jacoco'
-apply plugin: 'eclipse-wtp'
-apply plugin: 'java'
-apply plugin: 'biz.aQute.bnd.builder'
-
-buildscript {
-  repositories {
-    mavenCentral()
-  }
-  dependencies {
-    classpath 'biz.aQute.bnd:biz.aQute.bnd.gradle:4.2.0'
-  }
+plugins {
+	id 'jacoco'
+	id 'java'
+	id "org.springframework.boot" version "2.4.0"
 }
 
 repositories {
@@ -20,153 +9,87 @@ repositories {
   mavenLocal()
 }
 
-// Java 8 only
-sourceCompatibility = 1.8
-targetCompatibility = 1.8
+java {
+	sourceCompatibility(JavaVersion.VERSION_11)
+	targetCompatibility(JavaVersion.VERSION_11)
+}
 
 ext {
     versions = [
+		activation : '1.1.1',
         activemq : '5.15.5',
-        activemqRange : '[5.15.5, 6)',
         apacheCommons : '2.4',
         asmCommons : '5.0.3',
+		bcel : '5.1',
         bcelOsgi : '5.2_4',
-        bcelRange : '[5.2, 6)',
-        camel : '2.23.0',
-        camelRange : '[2.23, 3)',
+        camel : '3.5.0',
         commonsCodec : '1.10',
         commonsLang : '3.4',
         httpclient : '4.5.2',
-        httpclientRange : '[4.5, 5)',
         httpcore : '4.4.3',
-        httpcoreRange : '[4.4, 5)',
-        joda : '2.6',
-        jodaOsgi: '2.3_1',
+		jaxBapi : '2.3.1',
+		javaxInject : '1',
+		javaxJmsApi : '2.0.1',
+        joda : '2.10.8',
         mockito : '1.10.19',
-        osgi: '1.2.1',
         slf4j : '1.7.7',
+		sunJaxbCore : '2.3.0.1',
+		sunJaxbImpl : '2.3.2',
         xalan: '2.7.2',
-        xalanOsgi : '2.7.2_3',
-        xalanRange : '[2.7, 3)'
     ]
-    defaultOsgiImports = 'org.osgi.service.blueprint;version="[1,2)",*'
 }
 
 dependencies {
-	compile group: 'org.apache.camel', name: 'camel-core', version: versions.camel
-	compile group: 'org.apache.camel', name: 'camel-blueprint', version: versions.camel
-	compile group: 'org.apache.camel', name: 'camel-http4', version: versions.camel
-	compile group: 'org.apache.camel', name: 'camel-solr', version: versions.camel
-	compile group: 'org.apache.camel', name: 'camel-jetty', version: versions.camel
-	compile group: 'org.apache.commons', name: 'commons-lang3', version: versions.commonsLang
-	compile group: 'org.slf4j', name: 'slf4j-api', version: versions.slf4j
-	compile group: 'commons-io', name: 'commons-io', version: versions.apacheCommons
-
-	runtime group: 'org.apache.servicemix.bundles', name: 'org.apache.servicemix.bundles.xalan', version: versions.xalanOsgi
-	runtime group: 'org.apache.servicemix.bundles', name: 'org.apache.servicemix.bundles.joda-time', version: versions.jodaOsgi
-	
-	testCompile group: 'org.apache.camel', name: 'camel-script', version: versions.camel
-	testCompile group: 'org.apache.camel', name: 'camel-test-blueprint', version: versions.camel
-	testCompile group: 'org.mockito', name: 'mockito-all', version: versions.mockito
-
-    testRuntime group: 'org.slf4j', name: 'slf4j-log4j12', version: versions.slf4j
-	testRuntime group: 'org.apache.servicemix.bundles', name: 'org.apache.servicemix.bundles.joda-time', version: versions.jodaOsgi
-}
-
-// Copy configuration files over to output
-task processConfig(type: Copy) {
-	from('src/main/cfg') {
-		include '**/*.cfg'
+	implementation group: 'com.sun.xml.bind', name: 'jaxb-core', version: versions.sunJaxbCore
+	implementation group: 'com.sun.xml.bind', name: 'jaxb-impl', version: versions.sunJaxbImpl
+	implementation group: 'commons-io', name: 'commons-io', version: versions.apacheCommons
+	implementation group: 'javax.activation', name: 'activation', version: versions.activation
+	implementation group: 'javax.jms', name: 'javax.jms-api', version: versions.javaxJmsApi
+	implementation group: 'javax.inject', name: 'javax.inject', version: versions.javaxInject
+	implementation group: 'javax.xml.bind', name: 'jaxb-api', version: versions.jaxBapi
+	implementation group: 'org.apache.camel', name: 'camel-activemq', version: versions.camel
+	implementation(group: 'org.apache.camel', name: 'camel-core', version: versions.camel) {
+		transitive = true
 	}
-	into 'build/cfg/main'
-}
+	implementation group: 'org.apache.camel', name: 'camel-http', version: versions.camel
+	implementation group: 'org.apache.camel', name: 'camel-language', version: versions.camel
+	implementation group: 'org.apache.camel', name: 'camel-solr', version: versions.camel
+	implementation group: 'org.apache.camel', name: 'camel-jetty', version: versions.camel
+	implementation group: 'org.apache.camel', name: 'camel-rest', version: versions.camel
+	implementation group: 'org.apache.camel', name: 'camel-spring', version: versions.camel
+	implementation group: 'org.apache.camel', name: 'camel-xpath', version: versions.camel
+	implementation group: 'org.apache.camel', name: 'camel-xslt', version: versions.camel
+	implementation group: 'org.apache.camel.springboot', name: 'camel-spring-boot-bom', version: versions.camel
+	implementation( group: 'org.apache.camel.springboot', name: 'camel-spring-boot-starter', version: versions.camel) {
+		exclude group: 'ch.qos.logback', module: 'logback-classic'
+	}
+	implementation group: 'org.apache.commons', name: 'commons-lang3', version: versions.commonsLang
+	implementation group: 'org.slf4j', name: 'slf4j-api', version: versions.slf4j
+	implementation group: 'xalan', name: 'xalan', version: versions.xalan
 
-// Make a sources jar (if you want it)
-task sourceJar(type: Jar) {
-	classifier 'sources'
-	from sourceSets.main.allSource
-}
+	runtimeOnly group: 'bcel', name: 'bcel', version: versions.bcel
+	runtimeOnly group: 'commons-io', name: 'commons-io', version: versions.apacheCommons
+	runtimeOnly group: 'joda-time', name: 'joda-time', version: versions.joda
+	runtimeOnly group: 'org.apache.activemq', name: 'activemq-pool', version: versions.activemq
+	runtimeOnly group: 'org.apache.commons', name: 'commons-lang3', version: versions.commonsLang
+	runtimeOnly group: 'org.apache.httpcomponents', name: 'httpclient', version: versions.httpclient
+	runtimeOnly group: 'org.apache.httpcomponents', name: 'httpcore', version: versions.httpcore
+	runtimeOnly group: 'org.slf4j', name: 'slf4j-log4j12', version: versions.slf4j
 
-task javadocJar(type: Jar) {
-    classifier 'javadoc'
-    from javadoc
+	testImplementation group: 'org.apache.camel', name: 'camel-groovy', version: versions.camel
+	testImplementation group: 'org.apache.camel', name: 'camel-test-spring', version: versions.camel
+	testImplementation group: 'org.apache.camel', name: 'camel-spring-javaconfig', version: versions.camel
+	testImplementation group: 'org.mockito', name: 'mockito-all', version: versions.mockito
 }
-
-artifacts {
-    archives javadocJar 
-    archives sourceJar
-}
-
-classes {
-    classes.dependsOn processConfig
-}
-
-artifacts {
-    archives (file('build/cfg/main/ca.umanitoba.dam.islandora.fc3indexer.cfg')) {
-        classifier 'configuration'
-        type 'cfg'
-    }
-	archives (file('build/resources/main/features.xml')) {
-        classifier 'features'
-        type 'xml'
-    }
-}
-
-processResources {
-	from ('src/main/resources') {
-    	outputs.upToDateWhen { false  }
-    	exclude('OSGI-INF/**')
-    	expand project.properties
-    }
-}
-
-task copyToLib(type: Copy) {
-    from 'src/main/libs'
-    into 'build/libs'
-}
-
-build.dependsOn copyToLib
 
 dependencies {
-	compile fileTree('libs')
+	runtime fileTree('libs')
 }
 
-// Make our JAR file
-jar {
-    manifest {
-      bnd(
-        'Bundle-Version': project.version,
-        'Bundle-Vendor': project.vendor,
-        'Bundle-Description': project.description,
-        'Bundle-docURL': project.docURL,
-        'Bundle-License': project.license,
-        'Bundle-Name': project.buildName,
-        'Import-Package': "org.apache.camel," +
-                 "org.apache.camel.component.jms," +
-                 "org.apache.camel.component.jetty," +
-                 "org.apache.camel.component.solr," +
-                 "org.apache.camel.component.http4;version=\"${versions.camelRange}\"," +
-                 "org.joda.time.format," +
-                 "org.apache.xalan.processor;version=\"${versions.xalanRange}\"," +
-                 "org.apache.activemq.camel.component;version=\"${versions.activemqRange}\"," +
-                 "org.apache.activemq.pool;version=\"${versions.activemqRange}\"," +
-                 "org.apache.activemq;version=\"${versions.activemqRange}\"," +
-                 "${defaultOsgiImports}",
-        'Export-Package': 'ca.umanitoba.dam.islandora.fc3indexer',
-        'Bundle-Classpath': '.,' +
-      			"lib/gsearchlibs-2.7.jar," +
-      			"lib/xalan-2.7.2.jar"
-       )
-    }
-}
-
-sourceSets {
-    test {
-    	output.resourcesDir = "build/resources/test"
-    	resources {
-    		srcDir "src/test/resources"
-    	}
-    }
+bootJar {
+	manifest {
+		attributes 'Start-Class': 'ca.umanitoba.dam.islandora.fc3indexer.IndexerApplication'
+	}
 }
 
 test {

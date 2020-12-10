@@ -4,15 +4,17 @@ import java.io.File;
 import java.net.URL;
 
 import org.apache.camel.Header;
-import org.apache.camel.language.Simple;
+import org.apache.camel.language.simple.Simple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 /**
  * Checks for the existence of a stylesheet.
  * 
  * @author whikloj
  */
+@Component
 public class XSLTChecker {
 
     private static Logger LOGGER = LoggerFactory.getLogger(XSLTChecker.class);

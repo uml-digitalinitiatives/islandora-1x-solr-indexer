@@ -11,29 +11,32 @@ import static org.apache.camel.LoggingLevel.TRACE;
 import static org.apache.camel.LoggingLevel.WARN;
 import static org.apache.camel.builder.PredicateBuilder.in;
 import static org.apache.camel.builder.PredicateBuilder.not;
+import static org.apache.camel.component.solr.SolrConstants.OPERATION;
 import static org.apache.camel.component.solr.SolrConstants.OPERATION_DELETE_BY_ID;
 import static org.apache.camel.component.solr.SolrConstants.OPERATION_INSERT;
-import static org.apache.camel.component.solr.SolrConstants.OPERATION;
 import static org.slf4j.LoggerFactory.getLogger;
 
 import java.io.IOException;
+
+import org.apache.camel.AggregationStrategy;
 import org.apache.camel.Processor;
 import org.apache.camel.PropertyInject;
-import org.apache.camel.RoutesBuilder;
 import org.apache.camel.TypeConversionException;
 import org.apache.camel.builder.RouteBuilder;
-import org.apache.camel.builder.xml.Namespaces;
-import org.apache.camel.processor.aggregate.AggregationStrategy;
+import org.apache.camel.language.xpath.XPathBuilder;
 import org.apache.camel.processor.aggregate.UseLatestAggregationStrategy;
+import org.apache.camel.support.builder.Namespaces;
 import org.apache.solr.common.SolrException;
 import org.slf4j.Logger;
+import org.springframework.stereotype.Component;
 
 /**
  * Fedora 3 to Solr indexing routes.
  *
  * @author whikloj
  */
-public class FedoraSolrIndexer extends RouteBuilder implements RoutesBuilder {
+@Component
+public class FedoraSolrIndexer extends RouteBuilder {
 
     private static final Logger LOGGER = getLogger(FedoraSolrIndexer.class);
 
@@ -55,14 +58,25 @@ public class FedoraSolrIndexer extends RouteBuilder implements RoutesBuilder {
     private final String foxmlNS = "info:fedora/fedora-system:def/foxml#";
 
     private final Namespaces ns = new Namespaces("default", foxmlNS).add("foxml", foxmlNS);
-    
+
+    private final XPathBuilder activeStateXpath = XPathBuilder
+            .xpath("/foxml:digitalObject/foxml:objectProperties/foxml:property[@NAME = 'info:fedora/fedora-system:def/model#state' and @VALUE = 'Active']")
+            .namespaces(ns).booleanResult();
+
+    private final XPathBuilder datastreamIdXpath = XPathBuilder.xpath("/foxml:datastream/@ID", String.class)
+            .namespaces(ns);
+
+    private final XPathBuilder datastreamMimeTypeXpath = XPathBuilder
+            .xpath("/foxml:datastream/foxml:datastreamVersion[last()]/@MIMETYPE", String.class)
+            .namespaces(ns);
+
     @Override
     public void configure() throws Exception {
 
         final String fullPath = (!restPath.startsWith("/") ? "/" : "") + restPath + "/";
         restConfiguration().component("jetty").host("localhost").port(restPortNum);
 
-        /**
+        /*
          * A REST endpoint on localhost to force a re-index. Called from: REST request
          * to http://localhost:<reindexer.port>/reindex/<PID> Calls: JMS queue -
          * internal
@@ -82,11 +96,11 @@ public class FedoraSolrIndexer extends RouteBuilder implements RoutesBuilder {
                 .setHeader("pid", exchangeProperty("pid"))
                 .setHeader("methodName", constant("indexObject"))
                 .to("{{queue.internal}}")
-                .log(INFO, LOGGER, "Added ${property[pid]} to direct reindex")
+                .log(INFO, LOGGER, "Added ${exchangeProperty[pid]} to direct reindex")
                 .setBody(constant(""))
                 .removeHeaders("*");
 
-        /**
+        /*
          * Sits on the Fedora event queue and aggregates incoming messages to avoid over
          * processing. Called from: JMS queue - external Calls: JMS queue - internal
          */
@@ -99,7 +113,7 @@ public class FedoraSolrIndexer extends RouteBuilder implements RoutesBuilder {
                 .log(INFO, LOGGER, "Aggregated Fedora Object: ${header[pid]}, method: ${header[methodName]}")
                 .to("{{queue.internal}}");
 
-        /**
+        /*
          * Grabs from the internal aggregated queue and starts processing. Called from:
          * JMS queue - internal Calls: fedora-get-object-xml fedora-delete-multicaster
          */
@@ -114,7 +128,7 @@ public class FedoraSolrIndexer extends RouteBuilder implements RoutesBuilder {
                     .to("direct:fedora.getObjectXml")
                 .end();
 
-        /**
+        /*
          * Call out to Fedora to get the objectXML and return it. Called from:
          * fedora-routing Calls: fedora-insert-multicaster
          */
@@ -123,18 +137,20 @@ public class FedoraSolrIndexer extends RouteBuilder implements RoutesBuilder {
                 .description("Attempt to retrieve the object XML for the resource")
                 .setHeader(HTTP_METHOD, constant("GET"))
                 .setHeader(HTTP_URI,
-                        simple("{{fcrepo.baseUrl}}{{fcrepo.basePath}}/objects/$simple{property[pid]}/objectXML"))
-                .log(DEBUG, LOGGER, "Getting foxml ${property[pid]}")
-                .to("http4://localhost?authUsername={{fcrepo.authUser}}&authPassword={{fcrepo.authPassword}}&throwExceptionOnFailure=false&authenticationPreemptive=true")
+                        simple("{{fcrepo.baseUrl}}{{fcrepo.basePath}}/objects/$simple{exchangeProperty[pid" +
+                                "]}/objectXML"))
+                .log(DEBUG, LOGGER, "Getting foxml ${exchangeProperty[pid]}")
+                .to("http://localhost?authUsername={{fcrepo.authUser}}&authPassword={{fcrepo.authPassword}}&throwExceptionOnFailure=false&authenticationPreemptive=true")
                 .choice()
                     .when(header(HTTP_RESPONSE_CODE).isEqualTo(200))
                         .to("direct:fedora.insert")
                 .otherwise()
                      .log(ERROR, LOGGER,
-                        "Unable to get {{fcrepo.baseUrl}}{{fcrepo.basePath}}/objects/$simple{property[pid]}/objectXML")
+                        "Unable to get {{fcrepo.baseUrl}}{{fcrepo" +
+                                ".basePath}}/objects/$simple{exchangeProperty[pid]}/objectXML")
                 .end();
 
-        /**
+        /*
          * Determine if the object has Active state and re-index otherwise delete from
          * Solr.
          *
@@ -145,10 +161,9 @@ public class FedoraSolrIndexer extends RouteBuilder implements RoutesBuilder {
                 .routeId("fedora-insert-multicaster")
                 .description("Fedora Message insert multicaster")
                 .log(TRACE, LOGGER, "Started fedora-insert-multicaster")
-                .log(DEBUG, LOGGER, "aggregating ${property[pid]}")
+                .log(DEBUG, LOGGER, "aggregating ${exchangeProperty[pid]}")
                 .choice()
-                    .when(ns.xpath(
-                        "/foxml:digitalObject/foxml:objectProperties/foxml:property[@NAME = 'info:fedora/fedora-system:def/model#state' and @VALUE = 'Active']"))
+                    .when(activeStateXpath)
                         .multicast(stringConcatStrategy, false)
                           .to("direct:fedora.properties")
                           .split(body().tokenizeXML("datastream", "digitalObject"), stringConcatStrategy)
@@ -165,7 +180,7 @@ public class FedoraSolrIndexer extends RouteBuilder implements RoutesBuilder {
                 .end()
                 .log(TRACE, LOGGER, "Completed fedora-insert-multicaster");
 
-        /**
+        /*
          * Processes the main FOXML properties, the FOXML.xslt is the only required XML
          * file. Called from: fedora-insert-multicaster
          */
@@ -184,7 +199,7 @@ public class FedoraSolrIndexer extends RouteBuilder implements RoutesBuilder {
                 .to("log:ca.umanitoba.dam.islandora.fc3indexer?level=TRACE")
                 .log(TRACE, LOGGER, "Completed fedora-foxml-properties");
 
-        /**
+        /*
          * Processes a single foxml:datastream element, if there is an appropriate xslt
          * file. Called from: fedora-insert-multicaster Calls: xslt-exists
          */
@@ -192,8 +207,8 @@ public class FedoraSolrIndexer extends RouteBuilder implements RoutesBuilder {
                 .routeId("fedora-ds-process")
                 .description("Process the individual datastreams and return the Solr fields for their data.")
                 .log(TRACE, LOGGER, "Started fedora-ds-process")
-                .setHeader("DSID", ns.xpath("/foxml:datastream/@ID"))
-                .setHeader("mimetype", ns.xpath("/foxml:datastream/foxml:datastreamVersion[last()]/@MIMETYPE"))
+                .setHeader("DSID", datastreamIdXpath)
+                .setHeader("mimetype", datastreamMimeTypeXpath)
                 .log(DEBUG, LOGGER, "DSID (${header[DSID]}), mimetype (${header[mimetype]})")
                 .choice()
                     .when(method(XSLTChecker.class, "exists"))
@@ -204,7 +219,7 @@ public class FedoraSolrIndexer extends RouteBuilder implements RoutesBuilder {
                 .to("log:ca.umanitoba.dam.islandora.fc3indexer?level=TRACE")
                 .log(TRACE, LOGGER, "Completed fedora-ds-process");
 
-        /**
+        /*
          * The <DSID>.xslt exists so lets run the transform. Called from:
          * fedora-ds-process Calls: fedora-ds-isXML fedora-ds-isText
          */
@@ -244,7 +259,7 @@ public class FedoraSolrIndexer extends RouteBuilder implements RoutesBuilder {
                 .end()
                 .to("log:ca.umanitoba.dam.islandora.fc3indexer?level=TRACE");
 
-        /**
+        /*
          * Push the string (in SolrInputDocument format) to Solr Called from:
          * fedora-insert-multicaster
          */
@@ -317,7 +332,7 @@ public class FedoraSolrIndexer extends RouteBuilder implements RoutesBuilder {
                 .handled(true)
                 .to("{{queue.dead-letter}}")
                 .end()
-                .to("http4://localhost?authUsername={{fcrepo.authUser}}&authPassword={{fcrepo.authPassword}}&setSocketTimeout=10000&authenticationPreemptive=true&throwExceptionOnFailure=false")
+                .to("http://localhost?authUsername={{fcrepo.authUser}}&authPassword={{fcrepo.authPassword}}&setSocketTimeout=10000&authenticationPreemptive=true&throwExceptionOnFailure=false")
                 .choice()
                 .when(not(header(HTTP_RESPONSE_CODE).isEqualTo(200)))
                 .log(WARN, LOGGER, "Problem getting ${header[CamelHttpUri]} received ${header[CamelHttpResponseCode]}")
