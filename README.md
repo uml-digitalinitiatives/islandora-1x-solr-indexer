@@ -2,22 +2,26 @@
 ## Information
 This replaces the GSearch indexer with a simple camel route that could be extended easily.
 
-This is also an OSGI bundle and feature you can deploy to a Karaf container.
-
 ## Deployment
 1. Clone the repository.
 1. Change into the directory.
-1. Run `sudo ./gradlew build install`.
-1. This creates a new `build` directory, the absolute path to this is your `${build_dir}`
-1. Login to your Karaf container.
-1. Add the new repository `repo-add file:${build_dir}/resources/main/features.xml`
-1. Refresh the repositories (to ensure you added it correctly), `repo-refresh`
-1. Install the solr-indexer `feature:install islandora-1x-solr-indexer`
+1. Run `./gradlew build install`.
+1. Copy the `./build/libs/islandora-1x-solr-indexer.jar` to wherever you'd like.
+1. Copy the `example.properties` file and edit as necessary.
+1. Run JAR using the environment variable `fc3indexer.config.file` to point to your file.
+
 
 ## Configuration
-Configuration is via the deployed file in `${KARAF_HOME}/etc/ca.umanitoba.dam.islandora.fc3indexer.cfg`
+Configuration is done via a properties file, copy and edit the [`example.properties`](example.properties) file
+as needed.
 
-You **MUST** configure the location of your XSLT directory in the [`xslt.path` option](https://github.com/uml-digitalinitiatives/islandora-1x-solr-indexer/blob/osgi-package/src/main/cfg/ca.umanitoba.dam.islandora.fc3indexer.cfg#L9).
+Point to your customized properties file using the `fc3indexer.config.file` variable.
+
+```shell
+java -Dfc3indexer.config.file=/absolute/path/myproperties.properties -jar islandora-1x-solr-indexer.jar
+```
+
+You **MUST** configure the location of your XSLT directory in the `xslt.path` option.
 
 This *xslt.path* directory should contain XSLT files named with the same name as the datastream ID they will process (ie. RELS-EXT.xslt, DC.xslt, etc)
 
@@ -127,9 +131,17 @@ Its address is `http://localhost:<reindexer.port>/<reindexer.path>/reindex/{pid}
 
 It only allows GET requests and responds with a 200 OK and places an item directly onto the `queue.internal`
 
-## Debugging
+## Logging/Debugging
 
 If you are experiencing trouble getting your object indexed you can increase the debugging level to **TRACE** which will give you a tremendous amount of information during processing. It is **not** recommended to leave the logging at this level for production use.
+
+By default the log level is set to `INFO`, you can modify the level for the Fedora 3 Indexer or Apache Camel by using 
+the `fc3indexer.log.indexer` and `fc3indexer.log.camel` variables.
+
+For example to set the indexer to `TRACE` and Apache Camel to `DEBUG`
+```shell
+java -Dfc3indexer.log.indexer=TRACE -Dfc3indexer.log.camel=DEBUG -jar islandora-1x-solr-indexer.jar
+```
 
 ## Credit
 All credit to [acoburn](https://github.com/acoburn) for this is just an implementation of his camel route.
