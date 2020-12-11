@@ -27,15 +27,7 @@ public class BeanConfig {
     @Bean("activemq")
     public ActiveMQComponent getActiveMQ() {
         final var jms_process = indexerProps.getJmsProcesses();
-        int jms_process_int = 1;
-        if (!jms_process.isBlank()) {
-            try {
-                jms_process_int = Integer.parseInt(jms_process);
-            } catch (final NumberFormatException e) {
-                LOGGER.error("JMS Concurrent consumers is not an integer, found {}", jms_process);
-            }
-        }
-        return new ActiveMQComponent(getJmsConfig(jms_process_int));
+        return new ActiveMQComponent(getJmsConfig(jms_process));
     }
 
     @Bean("ext-activemq")

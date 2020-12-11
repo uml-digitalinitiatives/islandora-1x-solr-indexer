@@ -252,7 +252,8 @@ public class FedoraSolrIndexer extends RouteBuilder {
                         .to("direct:dsText")
                         .log(DEBUG, LOGGER, "Trying {{xslt.path}}/$simple{header[DSID]}.xslt")
                         .recipientList(
-                                 simple("xslt:{{xslt.path}}/$simple{header[DSID]}.xslt?transformerFactory=#xsltTransformer"))
+                                 simple("xslt:{{xslt.path}}/$simple{header[DSID]}" +
+                                         ".xslt?transformerFactory=#xsltTransformer"))
                         .endChoice()
                 .otherwise()
                          .setBody(constant(""))
@@ -283,7 +284,7 @@ public class FedoraSolrIndexer extends RouteBuilder {
                 .log(INFO, LOGGER, "Added/Updated ${header[pid]} to Solr")
                 .log(TRACE, LOGGER, "Completed solr-insertion");
 
-        /**
+        /*
          * Getting an XML datastream content from Fedora. Called from: xslt-exists
          * Calls: fedora-get-url
          */
@@ -304,7 +305,7 @@ public class FedoraSolrIndexer extends RouteBuilder {
                 .filter(body().isNotNull())
                 .setBody(body());
 
-        /**
+        /*
          * Getting a text datastream content from Fedora. Called from: xslt-exists
          * Calls: fedora-get-url
          */
@@ -319,7 +320,7 @@ public class FedoraSolrIndexer extends RouteBuilder {
                 .to("direct:get-url")
                 .filter(body().isNotNull()).process(string2xml);
 
-        /**
+        /*
          * Actually gets the datastream content from Fedora. Called from:
          * fedora-ds-isXML fedora-ds-isText
          */
@@ -339,7 +340,7 @@ public class FedoraSolrIndexer extends RouteBuilder {
                 .setBody(constant(""))
                 .end();
 
-        /**
+        /*
          * Unused delete multicaster, just an end-to-end route. Called from:
          * fedora-routing fedora-insert-multicaster Calls: solr-deletion
          */
@@ -348,7 +349,7 @@ public class FedoraSolrIndexer extends RouteBuilder {
                 .description("Fedora Message delete multicaster")
                 .to("seda:solr.delete");
 
-        /**
+        /*
          * Deletes from Solr by ID. Called from: fedora-delete-multicaster
          */
         from("seda:solr.delete?blockWhenFull=true&concurrentConsumers={{solr.processes}}")
@@ -367,7 +368,7 @@ public class FedoraSolrIndexer extends RouteBuilder {
                 .to("{{solr.baseUrl}}")
                 .log(INFO, LOGGER, "Removed ${header.pid} from Solr");
 
-        /**
+        /*
          * Dead letter logging. Called from: no where yet
          */
         from("seda:dead-letter-log")

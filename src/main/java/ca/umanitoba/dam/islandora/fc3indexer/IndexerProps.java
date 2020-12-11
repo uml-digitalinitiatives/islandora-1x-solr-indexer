@@ -40,6 +40,8 @@ public class IndexerProps {
     protected static final String REINDEXER_PORT = "reindexer.port";
     protected static final String REINDEXER_PATH = "reindexer.path";
 
+    protected static final String SPRING_RUN_CAMEL = "camel.springboot.main-run-controller";
+
     // Holds configuration properties to variables for later use in tests.
     protected final Map<String, String> prop2Method = new HashMap<>();
 
@@ -47,7 +49,7 @@ public class IndexerProps {
     private String xsltPath;
 
     @Value("${" + MAX_ERROR_DELIVERIES + ":3}")
-    private String maxErrorDeliveries;
+    private int maxErrorDeliveries;
 
     @Value("${" + JMS_BROKER + ":tcp://localhost:61616}")
     private String jmsBroker;
@@ -59,7 +61,7 @@ public class IndexerProps {
     private String jmsPassword;
 
     @Value("${" + JMS_PROCESSES + ":1}")
-    private String jmsProcesses;
+    private int jmsProcesses;
 
     @Value("${" + QUEUE_INCOMING + ":direct:incoming}")
     private String queueIncoming;
@@ -86,46 +88,21 @@ public class IndexerProps {
     private String solrBaseurl;
 
     @Value("${" + SOLR_PROCESSES + ":1}")
-    private String solrProcesses;
+    private int solrProcesses;
 
     @Value("${" + COMPLETION_TIMEOUT + ":10000}")
-    private String completionTimeout;
+    private int completionTimeout;
 
     @Value("${" + REINDEXER_PORT + ":9111}")
-    private String reindexerPort;
+    private int reindexerPort;
 
     @Value("${" + REINDEXER_PATH + ":/fedora3-solr-indexer}")
     private String reindexerPath;
 
-    @PostConstruct
-    public void setup() {
-        prop2Method.putAll(
-                Map.of(
-                        XSLT_PATH_PROP, xsltPath,
-                        MAX_ERROR_DELIVERIES, maxErrorDeliveries,
-                        JMS_BROKER, jmsBroker,
-                        JMS_USERNAME, jmsUsername,
-                        JMS_PASSWORD, jmsPassword,
-                        JMS_PROCESSES, jmsProcesses,
-                        QUEUE_INCOMING, queueIncoming,
-                        QUEUE_INTERNAL, queueInternal,
-                        QUEUE_DEADLETTER, queueDeadletter
-                )
-        );
-        prop2Method.putAll(
-                Map.of(
-                        FCREPO_BASEURL, fcrepoBaseurl,
-                        FCREPO_BASEPATH, fcrepoBasepath,
-                        FCREPO_USERNAME, fcrepoUsername,
-                        FCREPO_PASSWORD, fcrepoPassword,
-                        SOLR_BASEURL, solrBaseurl,
-                        SOLR_PROCESSES, solrProcesses,
-                        COMPLETION_TIMEOUT, completionTimeout,
-                        REINDEXER_PATH, reindexerPath,
-                        REINDEXER_PORT, reindexerPort
-                )
-        );
-    }
+    // This is a springboot option which keeps the camel routes running while the JVM is running.
+    @Value("${" + SPRING_RUN_CAMEL + ":true}")
+    private boolean runCamel;
+
     public String getXsltPath() {
         return xsltPath;
     }
@@ -134,11 +111,11 @@ public class IndexerProps {
         this.xsltPath = xsltPath;
     }
 
-    public String getMaxErrorDeliveries() {
+    public int getMaxErrorDeliveries() {
         return maxErrorDeliveries;
     }
 
-    public void setMaxErrorDeliveries(final String maxErrorDeliveries) {
+    public void setMaxErrorDeliveries(final int maxErrorDeliveries) {
         this.maxErrorDeliveries = maxErrorDeliveries;
     }
 
@@ -166,11 +143,11 @@ public class IndexerProps {
         this.jmsPassword = jmsPassword;
     }
 
-    public String getJmsProcesses() {
+    public int getJmsProcesses() {
         return jmsProcesses;
     }
 
-    public void setJmsProcesses(final String jmsProcesses) {
+    public void setJmsProcesses(final int jmsProcesses) {
         this.jmsProcesses = jmsProcesses;
     }
 
@@ -238,27 +215,27 @@ public class IndexerProps {
         this.solrBaseurl = solrBaseurl;
     }
 
-    public String getSolrProcesses() {
+    public int getSolrProcesses() {
         return solrProcesses;
     }
 
-    public void setSolrProcesses(final String solrProcesses) {
+    public void setSolrProcesses(final int solrProcesses) {
         this.solrProcesses = solrProcesses;
     }
 
-    public String getCompletionTimeout() {
+    public int getCompletionTimeout() {
         return completionTimeout;
     }
 
-    public void setCompletionTimeout(final String completionTimeout) {
+    public void setCompletionTimeout(final int completionTimeout) {
         this.completionTimeout = completionTimeout;
     }
 
-    public String getReindexerPort() {
+    public int getReindexerPort() {
         return reindexerPort;
     }
 
-    public void setReindexerPort(final String reindexerPort) {
+    public void setReindexerPort(final int reindexerPort) {
         this.reindexerPort = reindexerPort;
     }
 
@@ -270,11 +247,4 @@ public class IndexerProps {
         this.reindexerPath = reindexerPath;
     }
 
-    public Properties getProperties() {
-        final Properties props = new Properties();
-        for (final Map.Entry<String, String> e : prop2Method.entrySet()) {
-            props.put(e.getKey(), e.getValue());
-        }
-        return props;
-    }
 }
