@@ -1,12 +1,12 @@
 package ca.umanitoba.dam.islandora.fc3indexer;
 
-import static org.apache.commons.lang3.StringEscapeUtils.ESCAPE_XML10;
+import static org.apache.commons.text.StringEscapeUtils.ESCAPE_XML11;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.apache.camel.Processor;
-import org.apache.commons.lang3.text.translate.CharSequenceTranslator;
-import org.apache.commons.lang3.text.translate.LookupTranslator;
+import org.apache.commons.text.translate.CharSequenceTranslator;
+import org.apache.commons.text.translate.LookupTranslator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -19,6 +19,8 @@ import javax.xml.parsers.DocumentBuilder;
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Utility function for handling text datastreams.
@@ -29,12 +31,13 @@ public class StringToXmlProcessor implements Processor {
 
     private static Logger LOGGER = LoggerFactory.getLogger(StringToXmlProcessor.class);
 
-    private static CharSequenceTranslator customRules = new LookupTranslator(
-            new String[][] {
-                    { "\u2018", "" }, // left single quote
-            });
+    private static Map<CharSequence, CharSequence> lookupMap = new HashMap<>();
+    static {
+        lookupMap.put("\u2018", "");
+    }
+    private static CharSequenceTranslator customRules = new LookupTranslator(lookupMap);
     
-    private static CharSequenceTranslator translator = ESCAPE_XML10.with(customRules);
+    private static CharSequenceTranslator translator = ESCAPE_XML11.with(customRules);
     
     /**
      * Wrap the contents in an element named with the datastream ID and encode any necessary characters.
