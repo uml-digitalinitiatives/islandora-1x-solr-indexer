@@ -2,6 +2,19 @@ package ca.umanitoba.dam.islandora.fc3indexer;
 
 import static org.apache.commons.text.StringEscapeUtils.ESCAPE_XML11;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.StringReader;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.apache.camel.Processor;
@@ -13,15 +26,6 @@ import org.w3c.dom.Document;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.parsers.DocumentBuilder;
-
-import java.io.IOException;
-import java.io.StringReader;
-import java.util.HashMap;
-import java.util.Map;
-
 /**
  * Utility function for handling text datastreams.
  * 
@@ -31,14 +35,45 @@ public class StringToXmlProcessor implements Processor {
 
     private static Logger LOGGER = LoggerFactory.getLogger(StringToXmlProcessor.class);
 
-    private static Map<CharSequence, CharSequence> lookupMap = new HashMap<>();
-    static {
-        lookupMap.put("\u2018", "");
+    private CharSequenceTranslator translator;
+
+    private String customFilePath;
+
+    public StringToXmlProcessor(final String customFilePath) {
+        this.customFilePath = customFilePath;
+        setup();
     }
-    private static CharSequenceTranslator customRules = new LookupTranslator(lookupMap);
-    
-    private static CharSequenceTranslator translator = ESCAPE_XML11.with(customRules);
-    
+
+    private void setup() {
+        final Map<CharSequence, CharSequence> lookupMap = new HashMap<>();
+        if (customFilePath != null && !customFilePath.isEmpty()) {
+            try {
+                final URI fileUri;
+                if (customFilePath.startsWith("classpath:")) {
+                    fileUri = getClass().getClassLoader().getResource(customFilePath.substring(10)).toURI();
+                } else {
+                    fileUri = URI.create(customFilePath);
+                }
+                final File customFile = new File(fileUri);
+                if (customFile.exists() && customFile.canRead()) {
+                    Files.lines(customFile.toPath())
+                            .filter(l -> !l.isBlank() && l.charAt(0) != '#' && l.contains(":"))
+                            .peek(l -> LOGGER.debug("filtered line is {}", l))
+                            .forEach(l -> {
+                                final String[] parts = l.split(":");
+                                if (parts.length == 2) {
+                                    lookupMap.put(parts[0].trim(), parts[1].trim());
+                                }
+                            });
+                }
+            } catch (final URISyntaxException | IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        final CharSequenceTranslator customRules = new LookupTranslator(lookupMap);
+        translator = ESCAPE_XML11.with(customRules);
+    }
+
     /**
      * Wrap the contents in an element named with the datastream ID and encode any necessary characters.
      * 
@@ -46,8 +81,11 @@ public class StringToXmlProcessor implements Processor {
      * @param inputString The contents of that datastream, should be plain text.
      * @return The new XML Document.
      */
-    public static Document convertToXML(final String dsid, final String inputString) {
-        LOGGER.debug("DSID is {} and body is {}", dsid, Math.min(inputString.length(), 100));
+    private Document convertToXML(final String dsid, final String inputString) {
+        LOGGER.debug("DSID is {} and body is {}", dsid, inputString.substring(0, Math.min(inputString.length(), 100)));
+        if (translator == null) {
+            setup();
+        }
         final String xmlVersion = translator.translate(inputString);
         final DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         LOGGER.trace("Now string is {}", xmlVersion);
@@ -71,7 +109,7 @@ public class StringToXmlProcessor implements Processor {
     @Override
     public void process(final Exchange exchange) throws Exception {
         final Message inMsg = exchange.getIn();
-        final Document xmlDoc = StringToXmlProcessor.convertToXML(inMsg.getHeader("DSID", String.class),
+        final Document xmlDoc = convertToXML(inMsg.getHeader("DSID", String.class),
                 inMsg.getBody(String.class));
         inMsg.setBody(xmlDoc);
     }

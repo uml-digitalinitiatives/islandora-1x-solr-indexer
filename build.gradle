@@ -41,46 +41,42 @@ ext {
 }
 
 dependencies {
+	implementation group: 'commons-io', name: 'commons-io', version: versions.apacheCommons
 	implementation group: 'com.sun.xml.bind', name: 'jaxb-core', version: versions.sunJaxbCore
 	implementation group: 'com.sun.xml.bind', name: 'jaxb-impl', version: versions.sunJaxbImpl
-	implementation group: 'commons-io', name: 'commons-io', version: versions.apacheCommons
-	implementation group: 'javax.activation', name: 'activation', version: versions.activation
-	implementation group: 'javax.jms', name: 'javax.jms-api', version: versions.javaxJmsApi
-	implementation group: 'javax.inject', name: 'javax.inject', version: versions.javaxInject
 	implementation group: 'javax.xml.bind', name: 'jaxb-api', version: versions.jaxBapi
+	//implementation group: 'javax.activation', name: 'activation', version: versions.activation
+	//implementation group: 'javax.jms', name: 'javax.jms-api', version: versions.javaxJmsApi
+	implementation group: 'javax.inject', name: 'javax.inject', version: versions.javaxInject
 	implementation group: 'org.apache.camel', name: 'camel-activemq', version: versions.camel
-	implementation(group: 'org.apache.camel', name: 'camel-core', version: versions.camel) {
-		transitive = true
-	}
+	implementation group: 'org.apache.camel', name: 'camel-core', version: versions.camel
 	implementation group: 'org.apache.camel', name: 'camel-http', version: versions.camel
 	implementation group: 'org.apache.camel', name: 'camel-language', version: versions.camel
 	implementation group: 'org.apache.camel', name: 'camel-solr', version: versions.camel
 	implementation group: 'org.apache.camel', name: 'camel-jetty', version: versions.camel
 	implementation group: 'org.apache.camel', name: 'camel-rest', version: versions.camel
-	implementation group: 'org.apache.camel', name: 'camel-spring', version: versions.camel
+	implementation group: 'org.apache.camel', name: 'camel-spring-javaconfig', version: versions.camel
 	implementation group: 'org.apache.camel', name: 'camel-xpath', version: versions.camel
 	implementation group: 'org.apache.camel', name: 'camel-xslt', version: versions.camel
+	//implementation group: 'org.apache.camel.springboot', name: 'camel-activemq-starter', version: versions.camel
 	implementation group: 'org.apache.camel.springboot', name: 'camel-spring-boot-bom', version: versions.camel
-	implementation( group: 'org.apache.camel.springboot', name: 'camel-spring-boot-starter', version: versions.camel) {
+	implementation(group: 'org.apache.camel.springboot', name: 'camel-spring-boot-starter', version: versions.camel)
+	implementation group: 'org.apache.commons', name: 'commons-text', version: versions.commonsText
+	implementation(group: 'org.springframework.boot', name: 'spring-boot-starter') {
 		exclude group: 'ch.qos.logback', module: 'logback-classic'
 	}
-	//implementation group: 'org.apache.commons', name: 'commons-lang3', version: versions.commonsLang
-	implementation group: 'org.apache.commons', name: 'commons-text', version: versions.commonsText
 	implementation group: 'org.slf4j', name: 'slf4j-api', version: versions.slf4j
 	implementation group: 'xalan', name: 'xalan', version: versions.xalan
 
 	runtimeOnly group: 'bcel', name: 'bcel', version: versions.bcel
-	runtimeOnly group: 'commons-io', name: 'commons-io', version: versions.apacheCommons
 	runtimeOnly group: 'joda-time', name: 'joda-time', version: versions.joda
-	runtimeOnly group: 'org.apache.activemq', name: 'activemq-pool', version: versions.activemq
-	runtimeOnly group: 'org.apache.commons', name: 'commons-lang3', version: versions.commonsLang
-	runtimeOnly group: 'org.apache.httpcomponents', name: 'httpclient', version: versions.httpclient
-	runtimeOnly group: 'org.apache.httpcomponents', name: 'httpcore', version: versions.httpcore
-	runtimeOnly group: 'org.slf4j', name: 'slf4j-log4j12', version: versions.slf4j
+	//runtimeOnly group: 'org.apache.activemq', name: 'activemq-pool', version: versions.activemq
+	//runtimeOnly group: 'org.apache.httpcomponents', name: 'httpclient', version: versions.httpclient
+	//runtimeOnly group: 'org.apache.httpcomponents', name: 'httpcore', version: versions.httpcore
+	//runtimeOnly group: 'org.slf4j', name: 'slf4j-log4j12', version: versions.slf4j
 
 	testImplementation group: 'org.apache.camel', name: 'camel-groovy', version: versions.camel
 	testImplementation group: 'org.apache.camel', name: 'camel-test-spring', version: versions.camel
-	testImplementation group: 'org.apache.camel', name: 'camel-spring-javaconfig', version: versions.camel
 	testImplementation group: 'org.mockito', name: 'mockito-all', version: versions.mockito
 }
 
@@ -90,7 +86,7 @@ dependencies {
 
 bootJar {
 	manifest {
-		attributes 'Start-Class': 'ca.umanitoba.dam.islandora.fc3indexer.IndexerApplication'
+		attributes 'Start-Class': 'ca.umanitoba.dam.islandora.fc3indexer.FedoraSolrIndexer'
 	}
 }
 

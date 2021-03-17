@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE configuration>
+<configuration>
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%p %d{HH:mm:ss.SSS} \(%c{0}\) %m%n</pattern>
+        </encoder>
+    </appender>
+    <logger name="ca.umanitoba.dam.islandora.fc3indexer" additivity="false" level="${fc3indexer.log.indexer:-INFO}">
+        <appender-ref ref="STDOUT"/>
+    </logger>
+    <logger name="com.apache.camel" additivity="false" level="${fc3indexer.log.camel:-INFO}">
+        <appender-ref ref="STDOUT"/>
+    </logger>
+    <logger name="com.apache.activemq" additivity="false" level="${fc3indexer.log.activemq:-INFO}">
+        <appender-ref ref="STDOUT"/>
+    </logger>
+
+    <root level="WARN">
+        <appender-ref ref="STDOUT"/>
+    </root>
+</configuration>

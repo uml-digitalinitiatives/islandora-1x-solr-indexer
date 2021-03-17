@@ -44,7 +44,7 @@ public class XSLTChecker {
             }
         }
         final File xsltFile = new File(tmpFile);
-        final Boolean exists = xsltFile.exists();
+        final boolean exists = xsltFile.exists();
         LOGGER.debug("DSID ({}) and path ({}), returning {}", dsid, xsltDir, (exists ? "true" : "false"));
         return exists;
     }

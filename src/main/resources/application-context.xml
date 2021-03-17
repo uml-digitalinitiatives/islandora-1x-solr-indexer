@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="
+         http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+         http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd
+         http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
+
+    <camelContext id="UmlFedora3SolrIndexer" xmlns="http://camel.apache.org/schema/spring" streamCache="true">
+        <propertyPlaceholder id="properties">
+            <propertiesLocation resolver="classpath" path="default.yml" optional="false"/>
+            <propertiesLocation resolver="file" path="${fc3indexer.config.file}" optional="true"/>
+        </propertyPlaceholder>
+        <packageScan>
+            <package>ca.umanitoba.dam.islandora.fc3indexer</package>
+        </packageScan>
+    </camelContext>
+
+</beans>

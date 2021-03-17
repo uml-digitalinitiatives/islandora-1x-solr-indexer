@@ -23,3 +23,5 @@ completion.timeout: 10000
 # Port to open the reindexing endpoint
 reindexer.port: 9222
 reindexer.path: /fedora3-solr-indexer
+
+custom.character.file: classpath:stringtoxml.properties
