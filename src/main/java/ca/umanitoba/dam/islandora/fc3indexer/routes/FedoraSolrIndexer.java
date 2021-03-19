@@ -1,6 +1,5 @@
-package ca.umanitoba.dam.islandora.fc3indexer;
+package ca.umanitoba.dam.islandora.fc3indexer.routes;
 
-import static ca.umanitoba.dam.islandora.fc3indexer.IndexerProps.DEFAULT_PROPERTY_FILE;
 import static org.apache.camel.Exchange.HTTP_METHOD;
 import static org.apache.camel.Exchange.HTTP_RESPONSE_CODE;
 import static org.apache.camel.Exchange.HTTP_URI;
@@ -17,7 +16,6 @@ import static org.apache.camel.component.solr.SolrConstants.OPERATION_DELETE_BY_
 import static org.apache.camel.component.solr.SolrConstants.OPERATION_INSERT;
 import static org.slf4j.LoggerFactory.getLogger;
 
-import java.io.File;
 import java.io.IOException;
 
 import org.apache.camel.AggregationStrategy;
@@ -30,16 +28,18 @@ import org.apache.camel.processor.aggregate.UseLatestAggregationStrategy;
 import org.apache.camel.support.builder.Namespaces;
 import org.apache.solr.common.SolrException;
 import org.slf4j.Logger;
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.stereotype.Component;
+
+import ca.umanitoba.dam.islandora.fc3indexer.utils.StringConcatAggregator;
+import ca.umanitoba.dam.islandora.fc3indexer.utils.StringToXmlProcessor;
+import ca.umanitoba.dam.islandora.fc3indexer.utils.XSLTChecker;
 
 /**
  * Fedora 3 to Solr indexing routes.
  *
  * @author whikloj
  */
-@SpringBootApplication
+
 @Component
 public class FedoraSolrIndexer extends RouteBuilder {
 
@@ -78,26 +78,6 @@ public class FedoraSolrIndexer extends RouteBuilder {
     private final XPathBuilder datastreamMimeTypeXpath = XPathBuilder
             .xpath("/foxml:datastream/foxml:datastreamVersion[last()]/@MIMETYPE", String.class)
             .namespaces(ns);
-
-    /**
-     * Main application.
-     * @param args command line args.
-     */
-    public static void main(final String[] args) {
-        final String prop = System.getProperty(DEFAULT_PROPERTY_FILE, null);
-        if (prop == null) {
-            System.out.println("You need to specify the location of the configuration file with -Dfc3indexer.config" +
-                    ".file=");
-            return;
-        } else {
-            final File propFile = new File(prop);
-            if (!(propFile.exists() || propFile.canRead())) {
-                System.out.println("Property file " + prop + " is not a readable file.");
-                return;
-            }
-        }
-        SpringApplication.run(FedoraSolrIndexer.class, args);
-    }
 
     @Override
     public void configure() throws Exception {

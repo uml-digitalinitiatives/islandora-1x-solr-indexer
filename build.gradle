@@ -86,7 +86,7 @@ dependencies {
 
 bootJar {
 	manifest {
-		attributes 'Start-Class': 'ca.umanitoba.dam.islandora.fc3indexer.FedoraSolrIndexer'
+		attributes 'Start-Class': 'ca.umanitoba.dam.islandora.fc3indexer.Application'
 	}
 }
 

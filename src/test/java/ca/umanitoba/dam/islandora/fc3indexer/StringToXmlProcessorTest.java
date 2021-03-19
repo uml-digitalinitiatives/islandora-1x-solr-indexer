@@ -22,6 +22,8 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.AbstractJUnit4SpringContextTests;
 
+import ca.umanitoba.dam.islandora.fc3indexer.utils.StringToXmlProcessor;
+
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 @ContextConfiguration(classes = {StringToXmlProcessorTest.ContextConfig.class})
 @RunWith(CamelSpringRunner.class)

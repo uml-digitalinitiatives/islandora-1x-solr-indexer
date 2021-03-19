@@ -1,4 +1,4 @@
-package ca.umanitoba.dam.islandora.fc3indexer;
+package ca.umanitoba.dam.islandora.fc3indexer.utils;
 
 import java.io.File;
 import java.net.URL;

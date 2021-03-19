@@ -18,6 +18,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.AbstractJUnit4SpringContextTests;
 
+import ca.umanitoba.dam.islandora.fc3indexer.utils.StringConcatAggregator;
+
 @RunWith(CamelSpringRunner.class)
 @ContextConfiguration(classes = {StringConcatAggTest.ContextConfig.class})
 public class StringConcatAggTest extends AbstractJUnit4SpringContextTests {

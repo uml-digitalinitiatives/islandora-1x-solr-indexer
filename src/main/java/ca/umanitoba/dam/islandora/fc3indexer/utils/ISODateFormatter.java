@@ -1,4 +1,4 @@
-package ca.umanitoba.dam.islandora.fc3indexer;
+package ca.umanitoba.dam.islandora.fc3indexer.utils;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;

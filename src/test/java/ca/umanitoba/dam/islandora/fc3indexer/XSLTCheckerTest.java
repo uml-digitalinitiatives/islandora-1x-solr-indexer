@@ -16,6 +16,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.test.context.ContextConfiguration;
 
+import ca.umanitoba.dam.islandora.fc3indexer.utils.XSLTChecker;
+
 @RunWith(CamelSpringRunner.class)
 @ContextConfiguration(classes = {XSLTCheckerTest.ContextConfig.class})
 public class XSLTCheckerTest {

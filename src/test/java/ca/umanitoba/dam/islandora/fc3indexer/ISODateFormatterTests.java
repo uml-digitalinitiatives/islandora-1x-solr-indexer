@@ -6,6 +6,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.BlockJUnit4ClassRunner;
 
+import ca.umanitoba.dam.islandora.fc3indexer.utils.ISODateFormatter;
+
 @RunWith(BlockJUnit4ClassRunner.class)
 public class ISODateFormatterTests {
 
