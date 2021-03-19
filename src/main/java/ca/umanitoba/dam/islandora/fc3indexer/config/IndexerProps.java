@@ -61,7 +61,7 @@ public class IndexerProps {
     @Bean
     public ConnectionFactory jmsConnectionFactory() throws JMSException {
         final var factory = new ActiveMQConnectionFactory();
-        LOGGER.debug("brokerUrl is {}", jmsBroker);
+        LOGGER.debug("jmsConnectionFactory: brokerUrl is {}", jmsBroker);
         if (!jmsBroker.isBlank()) {
             factory.setBrokerURL(jmsBroker);
             LOGGER.debug("jms username/password is {} / {}", jmsUsername, jmsPassword);
@@ -74,7 +74,7 @@ public class IndexerProps {
 
     private ActiveMQConfiguration getJmsConfig(final int consumers) {
         final var config = new ActiveMQConfiguration();
-        LOGGER.debug("brokerUrl is {}", jmsBroker);
+        LOGGER.debug("ActiveMQConfiguration: brokerUrl is {}", jmsBroker);
         if (!jmsBroker.isBlank()) {
             config.setBrokerURL(jmsBroker);
             LOGGER.debug("jms username/password is {} / {}", jmsUsername, jmsPassword);

@@ -86,8 +86,7 @@ public class FedoraSolrIndexer extends RouteBuilder {
         final String fullPath = (!restPath.startsWith("/") ? "/" : "") + restPath + "/";
         restConfiguration().component("jetty").host("localhost").port(restPortNum).contextPath(fullPath);
 
-        LOGGER.debug("Properyy injected xslt.path is {}", xsltPath);
-        LOGGER.debug("Property using simple properties {}", simple("{{xslt.path}}", String.class));
+        LOGGER.debug("Property injected xslt.path is {}", xsltPath);
         /*
          * A REST endpoint on localhost to force a re-index. Called from: REST request
          * to http://localhost:<reindexer.port>/reindex/<PID> Calls: JMS queue -
