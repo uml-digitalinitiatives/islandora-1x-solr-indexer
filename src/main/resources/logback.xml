@@ -9,10 +9,16 @@
     <logger name="ca.umanitoba.dam.islandora.fc3indexer" additivity="false" level="${fc3indexer.log.indexer:-INFO}">
         <appender-ref ref="STDOUT"/>
     </logger>
-    <logger name="com.apache.camel" additivity="false" level="${fc3indexer.log.camel:-INFO}">
+    <logger name="com.apache.camel" additivity="false" level="${fc3indexer.log.camel:-WARN}">
         <appender-ref ref="STDOUT"/>
     </logger>
-    <logger name="com.apache.activemq" additivity="false" level="${fc3indexer.log.activemq:-INFO}">
+    <logger name="com.apache.activemq" additivity="false" level="${fc3indexer.log.activemq:-WARN}">
+        <appender-ref ref="STDOUT"/>
+    </logger>
+    <logger name="javax.xml.transform" additivity="false" level="${fc3indexer.log.xml:-WARN}">
+        <appender-ref ref="STDOUT"/>
+    </logger>
+    <logger name="org.apache.xalan" additivity="false" level="${fc3indexer.log.xml:-WARN}">
         <appender-ref ref="STDOUT"/>
     </logger>
 

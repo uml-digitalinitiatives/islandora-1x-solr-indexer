@@ -14,6 +14,7 @@ import static org.apache.camel.builder.PredicateBuilder.not;
 import static org.apache.camel.component.solr.SolrConstants.OPERATION;
 import static org.apache.camel.component.solr.SolrConstants.OPERATION_DELETE_BY_ID;
 import static org.apache.camel.component.solr.SolrConstants.OPERATION_INSERT;
+import static org.apache.camel.component.solr.SolrConstants.OPERATION_SOFT_COMMIT;
 import static org.slf4j.LoggerFactory.getLogger;
 
 import java.io.IOException;
@@ -81,6 +82,8 @@ public class FedoraSolrIndexer extends RouteBuilder {
 
     @Override
     public void configure() throws Exception {
+        getContext().setStreamCaching(true);
+
         final Processor string2xml = new StringToXmlProcessor(customCharacters);
 
         final String fullPath = (!restPath.startsWith("/") ? "/" : "") + restPath + "/";
@@ -206,7 +209,15 @@ public class FedoraSolrIndexer extends RouteBuilder {
                 .setHeader("FEDORAPASS", exchangeProperty("fcrepo.authPassword"))
                 .setHeader("FEDORAURL", exchangeProperty("fcrepo.baseUrl"))
                 .setHeader("FEDORAPATH", exchangeProperty("fcrepo.basePath"))
-                .to("xslt:{{xslt.path}}/FOXML.xslt?transformerFactory=#xsltTransformer")
+                .setHeader("DSID", constant("FOXML"))
+                .log(DEBUG, LOGGER, "Processing {{xslt.path}}/FOXML.xslt")
+                .choice()
+                    .when(method(XSLTChecker.class, "exists"))
+                    .to("xslt:{{xslt.path}}/FOXML.xslt?contentCache=false")
+                .otherwise()
+                    .log(ERROR, LOGGER, "Could not find {{xslt.path}}/FOXML.xslt")
+                    .setBody(constant(""))
+
                 .to("log:ca.umanitoba.dam.islandora.fc3indexer?level=TRACE")
                 .log(TRACE, LOGGER, "Completed fedora-foxml-properties");
 
@@ -257,14 +268,13 @@ public class FedoraSolrIndexer extends RouteBuilder {
                         .to("direct:dsXML")
                         .log(DEBUG, LOGGER, "Trying {{xslt.path}}/$simple{header[DSID]}.xslt")
                         .recipientList(
-                                 simple("xslt:{{xslt.path}}/$simple{header[DSID]}.xslt?transformerFactory=#xsltTransformer"))
+                                 simple("xslt:{{xslt.path}}/$simple{header[DSID]}.xslt"))
                         .endChoice()
                 .when(header("mimetype").startsWith("text/plain"))
                         .to("direct:dsText")
                         .log(DEBUG, LOGGER, "Trying {{xslt.path}}/$simple{header[DSID]}.xslt")
                         .recipientList(
-                                 simple("xslt:{{xslt.path}}/$simple{header[DSID]}" +
-                                         ".xslt?transformerFactory=#xsltTransformer"))
+                                 simple("xslt:{{xslt.path}}/$simple{header[DSID]}.xslt"))
                         .endChoice()
                 .otherwise()
                          .setBody(constant(""))
@@ -291,6 +301,8 @@ public class FedoraSolrIndexer extends RouteBuilder {
                 .log(TRACE, LOGGER, "Started solr-insertion")
                 .to("log:ca.umanitoba.dam.islandora.fc3indexer?level=TRACE")
                 .setHeader(OPERATION, constant(OPERATION_INSERT))
+                .to("{{solr.baseUrl}}")
+                .setHeader(OPERATION, constant(OPERATION_SOFT_COMMIT))
                 .to("{{solr.baseUrl}}")
                 .log(INFO, LOGGER, "Added/Updated ${header[pid]} to Solr")
                 .log(TRACE, LOGGER, "Completed solr-insertion");

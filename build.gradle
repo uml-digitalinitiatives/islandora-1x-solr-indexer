@@ -45,8 +45,6 @@ dependencies {
 	implementation group: 'com.sun.xml.bind', name: 'jaxb-core', version: versions.sunJaxbCore
 	implementation group: 'com.sun.xml.bind', name: 'jaxb-impl', version: versions.sunJaxbImpl
 	implementation group: 'javax.xml.bind', name: 'jaxb-api', version: versions.jaxBapi
-	//implementation group: 'javax.activation', name: 'activation', version: versions.activation
-	//implementation group: 'javax.jms', name: 'javax.jms-api', version: versions.javaxJmsApi
 	implementation group: 'javax.inject', name: 'javax.inject', version: versions.javaxInject
 	implementation group: 'org.apache.camel', name: 'camel-activemq', version: versions.camel
 	implementation group: 'org.apache.camel', name: 'camel-core', version: versions.camel
@@ -58,9 +56,10 @@ dependencies {
 	implementation group: 'org.apache.camel', name: 'camel-spring-javaconfig', version: versions.camel
 	implementation group: 'org.apache.camel', name: 'camel-xpath', version: versions.camel
 	implementation group: 'org.apache.camel', name: 'camel-xslt', version: versions.camel
-	//implementation group: 'org.apache.camel.springboot', name: 'camel-activemq-starter', version: versions.camel
 	implementation group: 'org.apache.camel.springboot', name: 'camel-spring-boot-bom', version: versions.camel
-	implementation(group: 'org.apache.camel.springboot', name: 'camel-spring-boot-starter', version: versions.camel)
+	implementation group: 'org.apache.camel.springboot', name: 'camel-spring-boot-starter', version: versions.camel
+	implementation group: 'org.apache.camel.springboot', name: 'camel-solr-starter', version: versions.camel
+	implementation group: 'org.apache.camel.springboot', name: 'camel-xslt-starter', version: versions.camel
 	implementation group: 'org.apache.commons', name: 'commons-text', version: versions.commonsText
 	implementation(group: 'org.springframework.boot', name: 'spring-boot-starter') {
 		exclude group: 'ch.qos.logback', module: 'logback-classic'
@@ -70,10 +69,6 @@ dependencies {
 
 	runtimeOnly group: 'bcel', name: 'bcel', version: versions.bcel
 	runtimeOnly group: 'joda-time', name: 'joda-time', version: versions.joda
-	//runtimeOnly group: 'org.apache.activemq', name: 'activemq-pool', version: versions.activemq
-	//runtimeOnly group: 'org.apache.httpcomponents', name: 'httpclient', version: versions.httpclient
-	//runtimeOnly group: 'org.apache.httpcomponents', name: 'httpcore', version: versions.httpcore
-	//runtimeOnly group: 'org.slf4j', name: 'slf4j-log4j12', version: versions.slf4j
 
 	testImplementation group: 'org.apache.camel', name: 'camel-groovy', version: versions.camel
 	testImplementation group: 'org.apache.camel', name: 'camel-test-spring', version: versions.camel

@@ -4,12 +4,15 @@ import static org.slf4j.LoggerFactory.getLogger;
 
 import javax.jms.ConnectionFactory;
 import javax.jms.JMSException;
+import javax.xml.XMLConstants;
+import javax.xml.transform.TransformerConfigurationException;
 import javax.xml.transform.TransformerFactory;
 
 import org.apache.activemq.ActiveMQConnectionFactory;
 import org.apache.camel.component.activemq.ActiveMQComponent;
 import org.apache.camel.component.activemq.ActiveMQConfiguration;
-import org.apache.xalan.processor.TransformerFactoryImpl;
+import org.apache.camel.component.xslt.TransformerFactoryConfigurationStrategy;
+import org.apache.camel.component.xslt.XsltEndpoint;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -23,10 +26,10 @@ import org.springframework.context.annotation.PropertySources;
  */
 @PropertySources({
         @PropertySource(value = "file:${" + IndexerProps.DEFAULT_PROPERTY_FILE + "}", ignoreResourceNotFound = true),
-        @PropertySource(value = "classpath:default.yml")
+        @PropertySource(value = "classpath:default.properties")
 })
 @Configuration
-public class IndexerProps {
+public class IndexerProps implements TransformerFactoryConfigurationStrategy {
     private static final Logger LOGGER = getLogger(IndexerProps.class);
 
     public static final String DEFAULT_PROPERTY_FILE = "fc3indexer.config.file";
@@ -64,7 +67,7 @@ public class IndexerProps {
         LOGGER.debug("jmsConnectionFactory: brokerUrl is {}", jmsBroker);
         if (!jmsBroker.isBlank()) {
             factory.setBrokerURL(jmsBroker);
-            LOGGER.debug("jms username/password is {} / {}", jmsUsername, jmsPassword);
+            LOGGER.debug("jms username is {}", jmsUsername);
             if (!jmsUsername.isBlank() && !jmsPassword.isBlank()) {
                 factory.createConnection(jmsUsername, jmsPassword);
             }
@@ -77,7 +80,7 @@ public class IndexerProps {
         LOGGER.debug("ActiveMQConfiguration: brokerUrl is {}", jmsBroker);
         if (!jmsBroker.isBlank()) {
             config.setBrokerURL(jmsBroker);
-            LOGGER.debug("jms username/password is {} / {}", jmsUsername, jmsPassword);
+            LOGGER.debug("jms username is {}", jmsUsername);
             if (!jmsUsername.isBlank() && !jmsPassword.isBlank()) {
                 config.setUsername(jmsUsername);
                 config.setPassword(jmsPassword);
@@ -87,8 +90,13 @@ public class IndexerProps {
         return config;
     }
 
-    @Bean("xsltTransformer")
-    public TransformerFactory getXalan() {
-        return new TransformerFactoryImpl();
+    @Override
+    public void configure(final TransformerFactory factory, final XsltEndpoint endpoint) {
+        LOGGER.debug("Configuring the XSLT Factory.");
+        try {
+            factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, false);
+        } catch (final TransformerConfigurationException e) {
+            LOGGER.error("Unable to set XMLConstants.FEATURE_SECURE_PROCESSING to false");
+        }
     }
 }
