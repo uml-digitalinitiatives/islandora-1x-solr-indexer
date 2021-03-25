@@ -114,7 +114,7 @@ This indexer watches the activemq queue for Fedora update messages. When one arr
 2. If not, the FOXML is retrieved from Fedora and the property *info:fedora/fedora-system:def/model#state* is checked. If it is **Active** the object is indexed, otherwise it is deleted.
 
 ### Indexing process
-The FOXML is split up into **foxml:datastream** and processed, if the mime-type is **text/xml**, **application/xml**, **application/rdf+xml** or **text/html** the datastream content is retrieved from Fedora and transformed using a stylesheet of the same name (as the datastream ID plus `.xslt`) in the directory specified by the `xslt.path` configuration parameter.
+The FOXML is split up into **foxml:datastream** and processed, if the mime-type is **text/xml**, **application/xml**, **application/rdf+xml**, **text/html** or **text/plain** the datastream content is retrieved from Fedora and transformed using a stylesheet of the same name (as the datastream ID plus `.xslt`) in the directory specified by the `xslt.path` configuration parameter.
 
 If an appropriate XSLT file does **not** exist, that datastream is skipped. 
 
