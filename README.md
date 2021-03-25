@@ -2,6 +2,9 @@
 ## Information
 This replaces the GSearch indexer with a simple camel route that could be extended easily.
 
+## Java
+**This requires Java 11 to build and run**
+
 ## Deployment
 1. Clone the repository.
 1. Change into the directory.
@@ -49,24 +52,19 @@ jms.password=
 * Username/Password (if required) to connect to the JMS broker
 
 ```
-queue.incoming=activemq:queue:fedora_update
+queue.incoming=ext-activemq:queue:fedora_update
 ```
 
-* The queue to read incoming messages from. The _activemq:_ part aligns with the [bean ID defined in the blueprint](https://github.com/uml-digitalinitiatives/islandora-1x-solr-indexer/blob/osgi-package/src/main/resources/OSGI-INF/blueprint/blueprint.xml#L64) and is mandatory unless you are wiring your own JMS connection.
+* The queue to read incoming messages from. The _ext-activemq:_ part aligns with the JMS bean wired internally to have a single consumer.
 
 ```
 queue.internal=activemq:queue:internalIndex
 ```
 
-* The indexer reads messages off of the `queue.incoming` queue into an aggregator. It will collect all the messages that occur within 10 seconds of each other and only process the last one. That message is passed to this internal queue.
+* The indexer reads messages off of the `queue.incoming` queue into an aggregator. It will collect all the messages that occur within 10 seconds (configurable with `completion.timeout`) of each other and only process the last one. That message is passed to this internal queue 
+  which specifies _activemq:_ to use the JMS bean which is consumed by the number of consumers defined in `jms.processes`.
 
     When ingesting objects in Fedora you normally get a JMS message for each of object ingest, datastream modify, etc. This helps to reduce the redundant indexing.
-
-```    
-queue.dead-letter=activemq:topic:trash
-```
-
-* Messages that fail in the queue are retried a number of times (`error.maxRedeliveries`) and then sent to this queue/topic.
 
 ```
 solr.processes=1
@@ -81,13 +79,7 @@ fcrepo.authUser=fedoraAdmin
 fcrepo.authPassword=
 ```
 
-* These define where your Fedora is and a username/password to allow us to get the datastreams to index.
-
-```
-error.maxRedeliveries=3
-```
-
-* How many times to try processing a message if you receive an error, once exhausted the message is directed to `queue.dead-letter`.
+* These define where your Fedora URI and a username/password to allow us to get the datastreams to index.
 
 ```
 solr.baseUrl=solr://localhost:8080/solr
@@ -107,6 +99,13 @@ reindexer.path=/fedora3-solr-indexer
 ```
 
 * On localhost at this port and path a reindexer GET endpoint will be located.
+
+```shell
+custom.character.file=
+```
+
+* A file of characters to alter when converting from plain text to XML. If the file exists
+each line should have the form `<character to remove>:<character to replace with>`
 
 ## How it works
 This indexer watches the activemq queue for Fedora update messages. When one arrives:
@@ -135,8 +134,12 @@ It only allows GET requests and responds with a 200 OK and places an item direct
 
 If you are experiencing trouble getting your object indexed you can increase the debugging level to **TRACE** which will give you a tremendous amount of information during processing. It is **not** recommended to leave the logging at this level for production use.
 
-By default the log level is set to `INFO`, you can modify the level for the Fedora 3 Indexer or Apache Camel by using 
-the `fc3indexer.log.indexer` and `fc3indexer.log.camel` variables.
+By default the log level is set to `INFO` for the indexer and `WARN` for Camel and other processes (ActiveMQ, Xalan), you can modify the level for the Fedora 3 Indexer or components using the following system properties.
+
+* `fc3indexer.log.indexer` = Fedora 3 Indexer
+* `fc3indexer.log.camel` = Apache Camel
+* `fc3indexer.log.activemq` = Apache ActiveMQ
+* `fc3indexer.log.xml` = Xalan and Java.xml
 
 For example to set the indexer to `TRACE` and Apache Camel to `DEBUG`
 ```shell
