@@ -268,7 +268,8 @@ public class FedoraSolrIndexer extends RouteBuilder {
                         .to("direct:dsXML")
                         .log(DEBUG, LOGGER, "Trying {{xslt.path}}/$simple{header[DSID]}.xslt")
                         .recipientList(
-                                 simple("xslt:{{xslt.path}}/$simple{header[DSID]}.xslt"))
+                                 simple("xslt:{{xslt.path}}/$simple{header[DSID]}" +
+                                         ".xslt?entityResolver=#cachingEntityResolver"))
                         .endChoice()
                 .when(header("mimetype").startsWith("text/plain"))
                         .to("direct:dsText")

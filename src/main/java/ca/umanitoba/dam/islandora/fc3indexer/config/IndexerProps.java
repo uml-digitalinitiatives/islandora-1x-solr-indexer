@@ -19,6 +19,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.context.annotation.PropertySources;
+import org.xml.sax.EntityResolver;
+
+import ca.umanitoba.dam.islandora.fc3indexer.utils.XHtmlCachingEntityResolver;
 
 /**
  * Holds/parses the properties file.
@@ -98,5 +101,11 @@ public class IndexerProps implements TransformerFactoryConfigurationStrategy {
         } catch (final TransformerConfigurationException e) {
             LOGGER.error("Unable to set XMLConstants.FEATURE_SECURE_PROCESSING to false");
         }
+        factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, "all");
+    }
+
+    @Bean(name = "cachingEntityResolver")
+    public EntityResolver xhtmlEntityResolver() {
+        return new XHtmlCachingEntityResolver();
     }
 }
