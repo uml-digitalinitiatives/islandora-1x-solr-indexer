@@ -89,6 +89,14 @@ public class FedoraSolrIndexer extends RouteBuilder {
         final String fullPath = (!restPath.startsWith("/") ? "/" : "") + restPath + "/";
         restConfiguration().component("jetty").host("localhost").port(restPortNum).contextPath(fullPath);
 
+
+        onException(Exception.class)
+                .maximumRedeliveries(10)
+                .maximumRedeliveryDelay(10000)
+                .redeliveryDelay(1000)
+                .log(ERROR, log, "Redelivery of message ${headers.pid} due to Exception")
+                .handled(true);
+
         LOGGER.debug("Property injected xslt.path is {}", xsltPath);
         /*
          * A REST endpoint on localhost to force a re-index. Called from: REST request
@@ -187,7 +195,7 @@ public class FedoraSolrIndexer extends RouteBuilder {
                           .end()
                         .end()
                         .setBody(simple("<update><add><doc>${body}</doc></add></update>"))
-                        .to("seda:solr.update")
+                        .to("seda:solr.update?blockWhenFull=true")
                     .endChoice()
                 .otherwise()
                     .to("direct:fedora.delete")
@@ -371,7 +379,7 @@ public class FedoraSolrIndexer extends RouteBuilder {
         from("direct:fedora.delete")
                 .routeId("fedora-delete-multicaster")
                 .description("Fedora Message delete multicaster")
-                .to("seda:solr.delete");
+                .to("seda:solr.delete?blockWhenFull=true");
 
         /*
          * Deletes from Solr by ID. Called from: fedora-delete-multicaster

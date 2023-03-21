@@ -55,12 +55,12 @@ public class IndexerProps implements TransformerFactoryConfigurationStrategy {
     private int jmsProcesses;
 
     @Bean("activemq")
-    public ActiveMQComponent getActiveMQ() {
+    public ActiveMQComponent getActiveMQ() throws JMSException {
         return new ActiveMQComponent(getJmsConfig(jmsProcesses));
     }
 
     @Bean("ext-activemq")
-    public ActiveMQComponent getExternalActiveMQ() {
+    public ActiveMQComponent getExternalActiveMQ() throws JMSException {
         return new ActiveMQComponent(getJmsConfig(1));
     }
 
@@ -78,17 +78,16 @@ public class IndexerProps implements TransformerFactoryConfigurationStrategy {
         return factory;
     }
 
-    private ActiveMQConfiguration getJmsConfig(final int consumers) {
+    private ActiveMQConfiguration getJmsConfig(final int consumers) throws JMSException {
         final var config = new ActiveMQConfiguration();
-        LOGGER.debug("ActiveMQConfiguration: brokerUrl is {}", jmsBroker);
         if (!jmsBroker.isBlank()) {
             config.setBrokerURL(jmsBroker);
-            LOGGER.debug("jms username is {}", jmsUsername);
-            if (!jmsUsername.isBlank() && !jmsPassword.isBlank()) {
+            if (!(jmsUsername.isBlank() || jmsPassword.isBlank())) {
                 config.setUsername(jmsUsername);
                 config.setPassword(jmsPassword);
             }
         }
+        config.setConnectionFactory(jmsConnectionFactory());
         config.setConcurrentConsumers(consumers);
         return config;
     }
