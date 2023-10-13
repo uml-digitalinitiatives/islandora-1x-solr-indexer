@@ -15,6 +15,8 @@ import static org.apache.camel.component.solr.SolrConstants.OPERATION;
 import static org.apache.camel.component.solr.SolrConstants.OPERATION_DELETE_BY_ID;
 import static org.apache.camel.component.solr.SolrConstants.OPERATION_INSERT;
 import static org.apache.camel.component.solr.SolrConstants.OPERATION_SOFT_COMMIT;
+import static org.apache.camel.support.builder.PredicateBuilder.and;
+import static org.apache.camel.support.builder.PredicateBuilder.or;
 import static org.slf4j.LoggerFactory.getLogger;
 
 import java.io.IOException;
@@ -65,12 +67,26 @@ public class FedoraSolrIndexer extends RouteBuilder {
     @PropertyInject("xslt.path")
     private String xsltPath;
 
+    @PropertyInject(value = "index.inactive", defaultValue = "false")
+    private boolean indexInactive;
+
+    @PropertyInject(value = "index.deleted", defaultValue = "false")
+    private boolean indexDeleted;
+
     private final String foxmlNS = "info:fedora/fedora-system:def/foxml#";
 
     private final Namespaces ns = new Namespaces("default", foxmlNS).add("foxml", foxmlNS);
 
     private final XPathBuilder activeStateXpath = XPathBuilder
             .xpath("/foxml:digitalObject/foxml:objectProperties/foxml:property[@NAME = 'info:fedora/fedora-system:def/model#state' and @VALUE = 'Active']")
+            .namespaces(ns).booleanResult();
+
+    private final XPathBuilder inactiveStateXpath = XPathBuilder
+            .xpath("/foxml:digitalObject/foxml:objectProperties/foxml:property[@NAME = 'info:fedora/fedora-system:def/model#state' and @VALUE = 'Inactive']")
+            .namespaces(ns).booleanResult();
+
+    private final XPathBuilder deletedStateXpath = XPathBuilder
+            .xpath("/foxml:digitalObject/foxml:objectProperties/foxml:property[@NAME = 'info:fedora/fedora-system:def/model#state' and @VALUE = 'Deleted']")
             .namespaces(ns).booleanResult();
 
     private final XPathBuilder datastreamIdXpath = XPathBuilder.xpath("/foxml:datastream/@ID", String.class)
@@ -94,7 +110,7 @@ public class FedoraSolrIndexer extends RouteBuilder {
                 .maximumRedeliveries(10)
                 .maximumRedeliveryDelay(10000)
                 .redeliveryDelay(1000)
-                .log(ERROR, log, "Redelivery of message ${headers.pid} due to Exception")
+                .log(ERROR, log, "Solr error ${exception.type} on ${headers.pid}: ${exception.message}")
                 .handled(true);
 
         LOGGER.debug("Property injected xslt.path is {}", xsltPath);
@@ -185,7 +201,10 @@ public class FedoraSolrIndexer extends RouteBuilder {
                 .log(TRACE, LOGGER, "Started fedora-insert-multicaster")
                 .log(DEBUG, LOGGER, "aggregating ${exchangeProperty[pid]}")
                 .choice()
-                    .when(activeStateXpath)
+                    .when(
+                            or(activeStateXpath,
+                                    and(inactiveStateXpath, constant(indexInactive)),
+                                    and(deletedStateXpath, constant(indexDeleted))))
                         .multicast(stringConcatStrategy, false)
                           .to("direct:fedora.properties")
                           .split(body().tokenizeXML("datastream", "digitalObject"), stringConcatStrategy)
