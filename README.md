@@ -82,6 +82,15 @@ fcrepo.authPassword=
 * These define where your Fedora URI and a username/password to allow us to get the datastreams to index.
 
 ```
+index.inactive=false
+index.deleted=false
+```
+
+* These allow you to index records that have a status of Inactive and/or Deleted. Normally records without a status of 
+Active are removed from the Solr index, if you enable these options and don't want them displayed you need to add a default
+filter for only displaying records with the Active status.
+
+```
 solr.baseUrl=solr://localhost:8080/solr
 ```
 
