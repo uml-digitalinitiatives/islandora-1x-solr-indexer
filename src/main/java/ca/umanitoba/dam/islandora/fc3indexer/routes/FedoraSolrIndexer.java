@@ -22,6 +22,7 @@ import static org.slf4j.LoggerFactory.getLogger;
 import java.io.IOException;
 
 import org.apache.camel.AggregationStrategy;
+import org.apache.camel.Predicate;
 import org.apache.camel.Processor;
 import org.apache.camel.PropertyInject;
 import org.apache.camel.TypeConversionException;
@@ -96,6 +97,9 @@ public class FedoraSolrIndexer extends RouteBuilder {
             .xpath("/foxml:datastream/foxml:datastreamVersion[last()]/@MIMETYPE", String.class)
             .namespaces(ns);
 
+    private final Namespaces auditNS = new Namespaces("atom", "http://www.w3.org/2005/Atom")
+            .add("fedora-types", "http://www.fedora.info/definitions/1/0/types/");
+
     @Override
     public void configure() throws Exception {
         getContext().setStreamCaching(true);
@@ -105,6 +109,9 @@ public class FedoraSolrIndexer extends RouteBuilder {
         final String fullPath = (!restPath.startsWith("/") ? "/" : "") + restPath + "/";
         restConfiguration().component("jetty").host("localhost").port(restPortNum).contextPath(fullPath);
 
+        final Predicate isNotAuditDS =
+                xpath("//atom:category[@scheme='fedora-types:logMessage']/@term", String.class, auditNS)
+                    .not().contains("fixity check");
 
         onException(Exception.class)
                 .maximumRedeliveries(10)
@@ -147,6 +154,7 @@ public class FedoraSolrIndexer extends RouteBuilder {
                 .description("Fedora Message aggregator (10 sec inactivity timeout)")
                 .log(DEBUG, LOGGER, "Raw Fedora Object: ${header[pid]}, method: ${header[methodName]}")
                 .filter(header("pid").isNotNull())
+                .filter(isNotAuditDS)
                 .aggregate(header("pid"), latestStrategy).completionTimeout(completionTimeout)
                 .log(INFO, LOGGER, "Aggregated Fedora Object: ${header[pid]}, method: ${header[methodName]}")
                 .to("{{queue.internal}}");

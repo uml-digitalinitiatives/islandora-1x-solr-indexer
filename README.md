@@ -8,8 +8,8 @@ This replaces the GSearch indexer with a simple camel route that could be extend
 ## Deployment
 1. Clone the repository.
 1. Change into the directory.
-1. Run `./gradlew build install`.
-1. Copy the `./build/libs/islandora-1x-solr-indexer.jar` to wherever you'd like.
+1. Run `./gradlew build`.
+1. Copy the `./build/libs/islandora-1x-solr-indexer-<version>.jar` to wherever you'd like.
 1. Copy the `example.properties` file and edit as necessary.
 1. Run JAR using the environment variable `fc3indexer.config.file` to point to your file.
 

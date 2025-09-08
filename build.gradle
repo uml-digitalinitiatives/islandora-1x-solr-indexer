@@ -76,7 +76,7 @@ dependencies {
 }
 
 dependencies {
-	runtime fileTree('libs')
+	runtimeOnly fileTree(dir: 'src/main/libs', include: ['*.jar'])
 }
 
 bootJar {

@@ -18,6 +18,7 @@ import javax.xml.parsers.ParserConfigurationException;
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.apache.camel.Processor;
+import org.apache.commons.text.StringEscapeUtils;
 import org.apache.commons.text.translate.CharSequenceTranslator;
 import org.apache.commons.text.translate.LookupTranslator;
 import org.slf4j.Logger;
@@ -86,7 +87,8 @@ public class StringToXmlProcessor implements Processor {
         if (translator == null) {
             setup();
         }
-        final String xmlVersion = translator.translate(inputString);
+        final String filtered = StringEscapeUtils.unescapeXml(StringEscapeUtils.escapeXml10(inputString));
+        final String xmlVersion = translator.translate(filtered);
         final DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         LOGGER.trace("Now string is {}", xmlVersion);
 
